@@ -12,7 +12,24 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TODOAPP">
         <activity
-            android:name=".MainActivity"
+            android:name=".ResetPasswordActivity"
+            android:exported="false" >
+        </activity>
+        <activity
+            android:name=".OTPVerificationActivity"
+            android:exported="false" >
+        </activity>
+        <activity
+            android:name=".RecoverPasswordActivity"
+            android:exported="false" >
+        </activity>
+
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false">
+        </activity>
+        <activity
+            android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
