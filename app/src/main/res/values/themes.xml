@@ -6,4 +6,22 @@
     </style>
 
     <style name="Theme.TODOAPP" parent="Base.Theme.TODOAPP" />
+    <style name="LoginInputStyle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">50dp</item>
+        <item name="android:background">@drawable/rounded_input_background</item>
+        <item name="android:paddingStart">15dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    <style name="OtpInputStyle">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">60dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:inputType">number</item>
+        <item name="android:maxLength">1</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:background">@drawable/otp_input</item>
+        <item name="android:layout_margin">5dp</item>
+    </style>
 </resources>
