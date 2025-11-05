@@ -1,14 +1,19 @@
-import app from './src/app.js';
+import express from 'express';
+import router from './src/routes/index.js';
 import { PORT } from './src/config/env.js';
-import pool from './src/config/db.js';
+import sequelize from './src/config/db.js';
 
-app.listen(PORT, () => {
+const app = express();
+app.use(express.json());
+app.use('/api', router);
+
+app.listen(PORT, async () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 
-  pool.getConnection().then(connection => {
-    connection.release();
+  try {
+    await sequelize.authenticate();
     console.log('Database connected successfully.');
-  }).catch(err => {
+  } catch (err) {
     console.error('Database connection failed:', err);
-  });
+  }
 });

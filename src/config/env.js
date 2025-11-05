@@ -14,3 +14,5 @@ export const DB_NAME = process.env.DB_NAME;
 export const DB_PORT = process.env.DB_PORT;
 export const JWT_SECRET = process.env.JWT_SECRET;
 export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
+export const NODEMAILER_USER = process.env.NODEMAILER_USER;
+export const NODEMAILER_PASSWORD = process.env.NODEMAILER_PASSWORD;

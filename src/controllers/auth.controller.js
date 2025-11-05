@@ -1,52 +1,67 @@
-import { createUser, getUserByUsername, User } from "../models/auth.model.js";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { JWT_SECRET,JWT_EXPIRES_IN } from "../config/env.js";
-
+import { signUpService, signInService, signOutService, resetPasswordService, forgotPasswordService } from "../services/authservices.js";
 
 export async function SignUp(req, res, next) {
-  const { username, email, password } = req.body;
-    try {
-        const existingUser = await getUserByUsername(username); 
-        const existingEmail = await getUserByUsername(email); 
-        if (existingEmail) {
-            return res.status(400).json({ message: 'Email already exists' });
-        }
-        if (existingUser) {
-            return res.status(400).json({ message: 'Username already exists' });
-        }
-        const newUser = await createUser(username, email, password);
-        const token = jwt.sign({ id: newUser.id, username: newUser.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-        res.status(201).json({ id: newUser.id, username: newUser.username, email: newUser.email, token });
-        console.log('User registered:', newUser);
-    } catch (error) {
-        next(error);
-    }
+  try {
+    const newUser = await signUpService(req.body);
+    return res.status(201).json({
+      user_id: newUser.user_id,
+      email: newUser.email,
+      phone_number: newUser.phone_number
+    });
+  } catch (err) {
+    if (err && err.status) return res.status(err.status).json({ message: err.message });
+    next(err);
+  }
 }
 
 export async function SignIn(req, res, next) {
-  const { username, password } = req.body;
   try {
-      const user = await getUserByUsername(username);
-      if(!user) {
-            return res.status(401).json({ message: 'Invalid username' });
-        }
-        console.log(user);
-      const validPassword = await bcrypt.compare(password, user.password);
-      if (!validPassword) {
-            return res.status(401).json({ message: 'Invalid password' });
-      }
-      res.status(200).json({ message: 'Sign-in successful' });
-      const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-  } catch (error) {
-      next(error);
+    const { user, accessToken, refreshToken } = await signInService(req.body);
+    return res.status(200).json({
+      message: "Đăng nhập thành công",
+      accessToken,
+      refreshToken,
+      user: { user_id: user.user_id, email: user.email, phone_number: user.phone_number }
+    });
+  } catch (err) {
+    if (err && err.status) return res.status(err.status).json({ message: err.message });
+    next(err);
+  }
+}
+
+export async function ForgotPassword(req, res, next) {
+  try {
+    const { email } = req.body;
+    await forgotPasswordService(email);
+    return res.status(200).json({ message: "Email đặt lại mật khẩu đã được gửi" });
+  } catch (err) {
+    if (err && err.status) return res.status(err.status).json({ message: err.message });
+    next(err);
+  }
+}
+
+export async function ResetPassword(req, res, next) {
+  try {
+    const { token, newPassword } = req.body;
+    const result = await resetPasswordService(token, newPassword);
+    return res.status(200).json({ message: result.message });
+  } catch (err) {
+    if (err && err.status) return res.status(err.status).json({ message: err.message });
+    next(err);
   }
 }
 
 export async function SignOut(req, res, next) {
   try {
-      res.status(200).json({ message: 'Sign-out successful' });
-  } catch (error) {
-      next(error);
+    const refreshToken = req.body?.refreshToken || req.headers['x-refresh-token'] || (req.cookies && req.cookies.refreshToken);
+    if (!refreshToken) {
+      return res.status(400).json({ message: "Cần cung cấp refresh token" });
+    }
+
+    const result = await signOutService(refreshToken);
+    return res.status(200).json({ message: result.message });
+  } catch (err) {
+    if (err && err.status) return res.status(err.status).json({ message: err.message });
+    next(err);
   }
 }
