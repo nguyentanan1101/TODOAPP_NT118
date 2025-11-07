@@ -43,11 +43,12 @@ CREATE TABLE IF NOT EXISTS `todo`.`user` (
   `updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `reset_token` VARCHAR(100) NULL DEFAULT NULL,
   `reset_expires` DATETIME NULL DEFAULT NULL,
+  `address` VARCHAR(100) CHARACTER SET 'utf8mb3' NULL DEFAULT NULL,
+  `birthday` DATE NULL DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   UNIQUE INDEX `email` (`email` ASC) VISIBLE,
   UNIQUE INDEX `phone_number` (`phone_number` ASC) VISIBLE)
 ENGINE = InnoDB
-AUTO_INCREMENT = 4
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
@@ -123,6 +124,7 @@ CREATE TABLE IF NOT EXISTS `todo`.`project` (
     ON DELETE SET NULL
     ON UPDATE CASCADE)
 ENGINE = InnoDB
+AUTO_INCREMENT = 4
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
@@ -185,11 +187,25 @@ CREATE TABLE IF NOT EXISTS `todo`.`task` (
   `project_id` INT NOT NULL,
   `workflow_id` INT NULL DEFAULT NULL,
   `step_id` INT NULL DEFAULT NULL,
+  `created_by` INT NOT NULL,
+  `assigned_to` INT NULL DEFAULT NULL,
   PRIMARY KEY (`task_id`),
   UNIQUE INDEX `unique_task_per_project` (`task_name` ASC, `project_id` ASC) VISIBLE,
   INDEX `project_id` (`project_id` ASC) VISIBLE,
   INDEX `workflow_id` (`workflow_id` ASC) VISIBLE,
   INDEX `step_id` (`step_id` ASC) VISIBLE,
+  INDEX `fk_task_created_by` (`created_by` ASC) VISIBLE,
+  INDEX `fk_task_assigned_to` (`assigned_to` ASC) VISIBLE,
+  CONSTRAINT `fk_task_assigned_to`
+    FOREIGN KEY (`assigned_to`)
+    REFERENCES `todo`.`user` (`user_id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_task_created_by`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `todo`.`user` (`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
   CONSTRAINT `task_ibfk_1`
     FOREIGN KEY (`project_id`)
     REFERENCES `todo`.`project` (`project_id`)
@@ -229,7 +245,7 @@ CREATE TABLE IF NOT EXISTS `todo`.`milestone_task` (
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4exi
+DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
 
