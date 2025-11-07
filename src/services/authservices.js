@@ -74,7 +74,7 @@ export async function getUserByIdService(user_id) {
 }
 
 
-export async function updateUserProfileService(user_id, { phone_number, address, birthday }) {
+export async function updateUserProfileService(user_id, {email, phone_number, address, birthday }) {
   const user = await User.findByPk(user_id);
   if (!user) {
     throw { status: 404, message: "Người dùng không tồn tại" };
