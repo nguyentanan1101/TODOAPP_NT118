@@ -41,5 +41,3 @@ export const RefreshToken = sequelize.define('RefreshToken', {
     { name: 'idx_user_id', fields: ['user_id'] }
   ]
 });
-
-RefreshToken.belongsTo(User, { foreignKey: 'user_id' });

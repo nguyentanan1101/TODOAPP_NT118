@@ -1,49 +1,26 @@
-import { createTask, updateTask, deleteTask,findTaskIdByName, getAllTasks } from "../models/task.model.js";
+import { viewTasksByUserService, changeTaskStatusService } from "../services/taskservices.js";
 
-
-export async function CreateTask(req, res, next) {
-    const { task_name, description, task_priority, task_progress = 0, status, Due_date } = req.body;
-    
+export async function viewTasksByUser(req, res, next) {
     try {
-        const newTask = await createTask(task_name, description, task_priority, task_progress, status, Due_date);
-        res.status(201).json(newTask);
-        console.log('Task created:', newTask);
-    } catch (error) {
-        next(error);
-    }
+        const user_id = req.user.id;
+        const { status } = req.query;
+        const tasks = await viewTasksByUserService(user_id, status);
+        return res.status(200).json({ tasks });
+    } catch (err) {
+        if (err && err.status) return res.status(err.status).json({ message: err.message });
+        next(err);
+    } 
 }
 
-export async function GetAllTasks(req, res, next) {
+
+export async function changeTaskStatus(req, res, next) {
     try {
-        const tasks = await getAllTasks();
-        res.status(200).json(tasks);
-    } catch (error) {
-        next(error);
-    }
-}
-
-export async function UpdateTask(req, res, next) {
-  try {
-    const fieldsToUpdate = req.body;
-    let taskId = await findTaskIdByName(fieldsToUpdate.task_name);
-    if (!taskId) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
-    const updatedTask = await updateTask(taskId, fieldsToUpdate);
-    res.status(200).json(updatedTask);
-    console.log('Task updated:', updatedTask);
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function DeleteTask(req, res, next) {
-  try {
-    const { id } = req.params;
-    await deleteTask(id);
-    res.status(200).json({ message: 'Task deleted successfully' });
-    console.log('Task deleted with ID:', id);
-  } catch (error) {
-    next(error);
-  }
+        const { task_id } = req.params;
+        const { newStatus } = req.body;
+        const updatedTask = await changeTaskStatusService(task_id, newStatus);
+        return res.status(200).json({ task: updatedTask });
+    } catch (err) {
+        if (err && err.status) return res.status(err.status).json({ message: err.message });
+        next(err);
+    }  
 }

@@ -1,73 +1,89 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../config/db.js';
 
 export const Task = sequelize.define('Task', {
-  ID: { 
-    type: DataTypes.INTEGER, 
-    autoIncrement: true, 
-    primaryKey: true 
-  },
-  Task_name: { 
-    type: DataTypes.STRING(100), 
-    allowNull: false, 
-    unique: true 
-  },
-  Description: { type: DataTypes.TEXT },
-  Task_priority: { 
-    type: DataTypes.ENUM('low', 'medium', 'high'),
-    defaultValue: 'medium'
-  },
-  Task_progress: { 
+  task_id: {
     type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  task_name: {
+    type: DataTypes.STRING(100),
+    allowNull: false
+  },
+  task_description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  task_status: {
+    type: DataTypes.ENUM('ToDo', 'Working', 'Done'),
+    allowNull: false,
+    defaultValue: 'ToDo'
+  },
+  task_progress: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
     defaultValue: 0
   },
-  Status: { 
-    type: DataTypes.ENUM('todo', 'in_progress', 'done'),
-    defaultValue: 'todo'
+  created_date: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
   },
-  Create_date: { 
-    type: DataTypes.DATE, 
-    defaultValue: DataTypes.NOW 
+  start_date: {
+    type: DataTypes.DATE,
+    allowNull: true
   },
-  Due_date: { type: DataTypes.DATE },
-  Update_date: { type: DataTypes.DATE },
-  Project_ID: { type: DataTypes.INTEGER, allowNull: false }
+  due_date: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  project_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'project',
+      key: 'project_id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE'
+  },
+
+  created_by: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'user',
+      key: 'user_id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE'
+  },
+
+  assigned_to: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'user',
+      key: 'user_id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL'
+  }
+
 }, {
   tableName: 'task',
-  timestamps: false
+  timestamps: false,
+  indexes: [
+    {
+      name: 'unique_task_per_project',
+      unique: true,
+      fields: ['task_name', 'project_id']
+    }
+  ]
 });
 
+export default Task;
 
 
-export async function createTask(task_name, description, task_priority, task_progress, status, Due_date) {
-  const task = await Task.create({ task_name, description, task_priority, task_progress, status, Due_date });
-  return task;
-}
-
-
-export async function findTaskIdByName(task_name) {
-  const task = await Task.findOne({ where: { task_name } });
-  return task?.id;
-}
-
-
-export async function updateTask(id, fields) {
-  await Task.update(fields, { where: { id } });
-  return { id, ...fields };
-}
-
-
-export async function deleteTask(id) {
-  await Task.destroy({ where: { id } });
-}
-
-
-export async function getAllTasks() {
-  return await Task.findAll();
-}
-
-
-export async function getTaskByName(task_name) {
-  return await Task.findOne({ where: { task_name } });
-}
 

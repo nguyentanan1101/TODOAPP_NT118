@@ -1,18 +1,20 @@
 import { Router } from "express";
 import { authenticateJWT } from "../middleware/auth.middleware.js";
-import { SignUp, SignIn, SignOut, ResetPassword, ForgotPassword } from "../controllers/auth.controller.js";   
+import { signUp, signIn, signOut,getUserById ,resetPassword, forgotPassword, updateUserProfile } from "../controllers/auth.controller.js";   
 const AuthRouter = Router();
 
-AuthRouter.post("/Sign-up", SignUp);
+AuthRouter.post("/sign-up", signUp);
 
-AuthRouter.post("/Sign-in", SignIn);
+AuthRouter.post("/sign-in", signIn);
 
-AuthRouter.post("/Sign-out", authenticateJWT, SignOut);
+AuthRouter.post("/sign-out", authenticateJWT, signOut);
 
-AuthRouter.post("/forgot-password", ForgotPassword);
+AuthRouter.post("/forgot-password", forgotPassword);
 
-AuthRouter.post("/reset-password", ResetPassword);
+AuthRouter.post("/reset-password", resetPassword);
 
-AuthRouter.get ("/user-info", (req, res) => {res.send({ title: 'User Info' });});
+AuthRouter.get ("/user-info",authenticateJWT, getUserById);
+
+AuthRouter.put ("/update-profile",authenticateJWT, updateUserProfile);
 
 export default AuthRouter;

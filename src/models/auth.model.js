@@ -17,6 +17,14 @@ export const User = sequelize.define('User', {
     unique: true,
     allowNull: false
   },
+  address: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  birthday: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
   password: {
     type: DataTypes.STRING(255),
     allowNull: false

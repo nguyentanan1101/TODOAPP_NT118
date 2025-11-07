@@ -11,7 +11,7 @@ function generateAccessToken(user) {
   return jwt.sign(
     { id: user.user_id, email: user.email },
     JWT_SECRET,
-    { expiresIn: "15m" }
+    { expiresIn: "1h" }
   );
 }
 
@@ -23,7 +23,7 @@ function generateRefreshToken(user) {
   );
 }
 
-export async function signUpService({ email, phone_number, password }) {
+export async function signUpService({ email, phone_number, address, birthday, password }) {
   if (!email || !phone_number || !password) {
     throw { status: 400, message: "Cần nhập đầy đủ Email, số điện thoại và mật khẩu" };
   }
@@ -35,7 +35,7 @@ export async function signUpService({ email, phone_number, password }) {
   if (existingPhone) throw { status: 400, message: "Số điện thoại đã tồn tại" };
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  return await User.create({ email, phone_number, password: hashedPassword });
+  return await User.create({ email, phone_number, address, birthday, password: hashedPassword });
 }
 
 export async function signInService({ email, phone_number, password }) {
@@ -60,6 +60,39 @@ export async function signInService({ email, phone_number, password }) {
   });
 
   return { user, accessToken, refreshToken };
+}
+
+
+export async function getUserByIdService(user_id) {
+  const user = await User.findByPk(user_id, {
+    attributes: { exclude: ['password', 'reset_token', 'reset_expires'] }
+  });
+  if (!user) {
+    throw { status: 404, message: "Người dùng không tồn tại" };
+  }
+  return user;
+}
+
+
+export async function updateUserProfileService(user_id, { phone_number, address, birthday }) {
+  const user = await User.findByPk(user_id);
+  if (!user) {
+    throw { status: 404, message: "Người dùng không tồn tại" };
+  } 
+  if (email) user.email = email;
+  if (phone_number) user.phone_number = phone_number;
+  if (address) user.address = address;
+  if (birthday) user.birthday = birthday;
+  await user.save();
+  return user;
+}
+
+export async function getUserIdByEmailService(email) {
+  const user = await User.findOne({ where: { email } });
+  if (!user) {
+    throw { status: 404, message: "Người dùng không tồn tại" };
+  } 
+  return user.user_id;
 }
 
 export async function refreshTokenService(token) {

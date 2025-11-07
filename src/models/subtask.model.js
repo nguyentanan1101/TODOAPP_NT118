@@ -1,21 +1,46 @@
-import pool from '../config/database.js';
+import { DataTypes, Sequelize } from 'sequelize';
+import sequelize from '../config/db.js';
 
-export class Subtask {
-  constructor(id, subtask_name, description, status, task_id, createdAt, due_date) {
-    this.id = id;
-    this.subtask_name = subtask_name;
-    this.description = description;
-    this.status = status;
-    this.task_id = task_id;
-    this.createdAt = createdAt;
-    this.due_date = due_date;
-  } 
-}
 
-export async function createSubtask(subtask_name, description, status, task_id, due_date) {
-    const [result] = await pool.query(
-        'INSERT INTO subtask (subtask_name, description, status, task_id, due_date) VALUES (?, ?, ?, ?, ?)',   
-        [subtask_name, description, status, task_id, due_date]
-    );
-    return new Subtask(result.insertId, subtask_name, description, status, task_id, new Date(), due_date);
-}   
+export const Subtask = sequelize.define('Subtask', {
+  subtask_id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  subtask_name: {
+    type: DataTypes.STRING(100),
+    allowNull: false
+  },
+  subtask_description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  subtask_status: {
+    type: DataTypes.ENUM('Working', 'Done'),
+    allowNull: false,
+    defaultValue: 'Working'
+  },
+  created_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+    defaultValue: Sequelize.literal('CURRENT_DATE')
+  },
+  task_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'task',
+      key: 'task_id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE'
+  }
+}, {
+  tableName: 'subtask',
+  timestamps: false
+});
+
+
+
+export default Subtask;

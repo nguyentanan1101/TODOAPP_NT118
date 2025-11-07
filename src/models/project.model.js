@@ -1,6 +1,5 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../config/db.js';
-import { User } from './auth.model.js';
 
 export const Project = sequelize.define('Project', {
   project_id: {
@@ -14,26 +13,27 @@ export const Project = sequelize.define('Project', {
   },
   project_status: {
     type: DataTypes.ENUM('Working', 'Done'),
+    allowNull: false,
     defaultValue: 'Working'
   },
   created_date: {
-    type: DataTypes.DATE,
+    type: DataTypes.DATEONLY,
     allowNull: false,
-    defaultValue: DataTypes.NOW
+    defaultValue: Sequelize.literal('CURRENT_DATE')
   },
   start_date: {
-    type: DataTypes.DATE,
+    type: DataTypes.DATEONLY,
     allowNull: true
   },
   due_date: {
-    type: DataTypes.DATE,
+    type: DataTypes.DATEONLY,
     allowNull: true
   },
   owner_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: User,
+      model: 'user',
       key: 'user_id'
     },
     onUpdate: 'CASCADE',
@@ -43,20 +43,5 @@ export const Project = sequelize.define('Project', {
   tableName: 'project',
   timestamps: false
 });
+export default Project;
 
-Project.belongsTo(User, {
-  foreignKey: 'owner_id',
-  as: 'owner'
-});
-
-export async function createProject(projectData) {
-  return await Project.create(projectData);
-}
-
-export async function getProjectById(project_id) {
-  return await Project.findByPk(project_id);
-}
-
-export async function getAllProjects() {
-  return await Project.findAll();
-}
