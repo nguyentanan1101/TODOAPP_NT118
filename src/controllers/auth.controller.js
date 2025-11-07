@@ -1,4 +1,4 @@
-import { signUpService, signInService, signOutService,getUserByIdService ,resetPasswordService, forgotPasswordService } from "../services/authservices.js";
+import { signUpService, signInService, signOutService,getUserByIdService ,resetPasswordService, forgotPasswordService, updateUserProfileService } from "../services/authservices.js";
 
 export async function signUp(req, res, next) {
   try {
