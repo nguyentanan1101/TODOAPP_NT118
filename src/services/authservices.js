@@ -35,6 +35,14 @@ export async function signUpService({ email, phone_number, username, address, bi
   if (existingPhone) throw { status: 400, message: "Số điện thoại đã tồn tại" };
 
   const hashedPassword = await bcrypt.hash(password, 10);
+  console.log("Data to insert:", {
+    email,
+    phone_number,
+    username,
+    address,
+    birthday,
+    password: '[hashed]'
+  });
   return await User.create({ email, phone_number, username, address, birthday, password: hashedPassword });
 }
 
