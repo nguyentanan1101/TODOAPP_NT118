@@ -29,6 +29,17 @@
             android:exported="false">
         </activity>
         <activity
+            android:name=".main.ViewAccountActivity"
+            android:exported="false" />
+        <activity
+            android:name=".main.EditAccountActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".main.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        <activity
             android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
@@ -37,6 +48,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".main.ProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".main.CalendarActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
