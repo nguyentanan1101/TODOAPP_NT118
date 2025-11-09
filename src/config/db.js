@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize";
-import { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT } from "./env.js";
+import { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST} from "./env.js";
 
 const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
   host: DB_HOST,
@@ -7,6 +7,7 @@ const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
   timezone: "+07:00",
   dialectOptions: {
     dateStrings: true,
+    charset: 'utf8mb4',
     typeCast: true
   },
   pool: {
@@ -22,7 +23,9 @@ const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
   },
   define: {
     timestamps: true,
-    underscored: true
+    underscored: true,
+    charset: 'utf8mb4',
+    collate: 'utf8mb4_unicode_ci'
   }
 });
 
