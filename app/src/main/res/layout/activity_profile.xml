@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:background="#F4F4F4"
+    tools:context=".main.ProfileActivity"
+    android:fitsSystemWindows="true">
+
+    <!-- Thông tin -->
+    <LinearLayout
+        android:id="@+id/Info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_margin="16dp"
+        android:padding="16dp"
+        android:background="@drawable/bg_white_rounded"
+        android:elevation="2dp">
+
+        <ImageView
+            android:id="@+id/imgAvatar"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:padding="4dp"
+            android:layout_marginEnd="12dp"/>
+<!--            android:src="@drawable/ic_avatar"-->
+<!--            android:background="@drawable/bg_circle"-->
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_vertical"
+            android:layout_gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Your Full Name"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:textColor="#000" />
+
+            <View
+                android:layout_width="wrap_content"
+                android:layout_height="8dp"/>
+
+            <TextView
+                android:id="@+id/tvPhone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+0123456789"
+                android:textColor="#777"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Các lựa chọn -->
+    <LinearLayout
+        android:layout_below="@id/Info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginHorizontal="16dp"
+        android:background="@drawable/bg_white_rounded"
+        android:paddingVertical="8dp"
+        android:elevation="2dp">
+
+        <!-- Account -->
+        <LinearLayout
+            android:id="@+id/your_account"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_user"
+                app:tint="#000" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="@string/your_account"
+                android:textSize="16sp"
+                android:textColor="#000" />
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_forward_gray"
+                app:tint="#999" />
+        </LinearLayout>
+
+        <!-- Feedback -->
+        <LinearLayout
+            android:id="@+id/feedback"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_help"
+                app:tint="#000" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="@string/feedback"
+                android:textSize="16sp"
+                android:textColor="#000" />
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_forward_gray"
+                app:tint="#999" />
+        </LinearLayout>
+
+        <!-- Setting -->
+        <LinearLayout
+            android:id="@+id/setting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_setting"
+                app:tint="#000" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="@string/setting"
+                android:textSize="16sp"
+                android:textColor="#000" />
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_forward_gray"
+                app:tint="#999" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/bottomLine"
+            android:layout_width="match_parent"
+            android:layout_marginHorizontal="25dp"
+            android:layout_height="2dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="#D7D7D7"/>
+
+        <!-- Sign out -->
+        <LinearLayout
+            android:id="@+id/sign_out"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_logout"
+
+                app:tint="#E53935" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="@string/logout"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="#E53935" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <include
+        layout="@layout/layout_bottom_nav"
+        android:id="@+id/bottomNav" />
+
+</RelativeLayout>

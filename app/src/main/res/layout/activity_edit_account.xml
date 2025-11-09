@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/your_account"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".main.EditAccountActivity"
+    android:orientation="vertical"
+    android:background="#F4F4F4"
+    android:fitsSystemWindows="true">
+
+    <!-- Thanh trên -->
+    <RelativeLayout
+        android:id="@+id/topBarInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical"
+        android:elevation="4dp">
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/your_account"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_centerHorizontal="true" />
+    </RelativeLayout>
+
+    <!-- Nội dung chính -->
+    <ScrollView
+        android:layout_below="@id/topBarInfo"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_white_rounded"
+            android:padding="24dp">
+
+            <FrameLayout
+                android:id="@+id/avatarContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp">
+
+                <!-- Avatar chính -->
+                <ImageView
+                    android:id="@+id/imgAvatar"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:src="@drawable/ic_user"
+                    android:scaleType="centerCrop"
+                    android:background="@drawable/bg_circle_white"
+                    android:layout_gravity="center" />
+
+                <!-- Icon đổi ảnh (đè lên góc phải dưới) -->
+                <ImageView
+                    android:id="@+id/btnChangePhoto"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_camera"
+                    android:background="@drawable/bg_circle_blue"
+                    android:padding="6dp"
+                    android:layout_gravity="bottom|end"
+                    android:layout_margin="4dp" />
+            </FrameLayout>
+
+
+            <!-- Name -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/name"
+                android:textColor="#666"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/edtName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Adam"
+                android:textColor="#000"
+                android:textSize="15sp"
+                android:backgroundTint="#CCCCCC"
+                android:inputType="textPersonName" />
+
+            <!-- Birthday & Gender -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp"
+                android:weightSum="2">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Date of Birth"
+                        android:textColor="#666"
+                        android:textSize="13sp" />
+
+                    <EditText
+                        android:id="@+id/edtDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="dd/MM/yyyy"
+                        android:focusable="false"
+                        android:clickable="true"
+                        android:inputType="none"
+                        android:textColor="#000"
+                        android:textSize="15sp"
+                        android:backgroundTint="#CCCCCC" />
+
+                </LinearLayout>
+
+                <Space
+                    android:layout_width="12dp"
+                    android:layout_height="match_parent" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Gender"
+                        android:textColor="#666"
+                        android:textSize="13sp" />
+
+                    <RadioGroup
+                        android:id="@+id/rgGender"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="0dp">
+
+                        <RadioButton
+                            android:id="@+id/rbMale"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Male"
+                            android:textColor="#000"
+                            android:buttonTint="#3A8DFF" />
+
+                        <RadioButton
+                            android:id="@+id/rbFemale"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Female"
+                            android:textColor="#000"
+                            android:layout_marginStart="12dp"
+                            android:buttonTint="#3A8DFF" />
+
+                    </RadioGroup>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Email -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Email"
+                android:textColor="#666"
+                android:textSize="13sp"
+                android:layout_marginTop="12dp" />
+
+            <EditText
+                android:id="@+id/edtEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Abcd@gmail.com"
+                android:textColor="#000"
+                android:textSize="15sp"
+                android:inputType="textEmailAddress"
+                android:backgroundTint="#CCCCCC" />
+
+            <!-- Mobile -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mobile"
+                android:textColor="#666"
+                android:textSize="13sp"
+                android:layout_marginTop="12dp" />
+
+            <EditText
+                android:id="@+id/edtMobile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="+0123456789"
+                android:textColor="#000"
+                android:textSize="15sp"
+                android:inputType="phone"
+                android:backgroundTint="#CCCCCC" />
+
+            <!-- Address -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Address"
+                android:textColor="#666"
+                android:textSize="13sp"
+                android:layout_marginTop="12dp" />
+
+            <EditText
+                android:id="@+id/edtAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="sjhyybgjkjkrnggggggggggggggggggggggggggggggggggggggggggggsn"
+                android:textColor="#000"
+                android:textSize="15sp"
+                android:inputType="textMultiLine"
+                android:backgroundTint="#CCCCCC" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginHorizontal="15dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_alignParentBottom="true"
+            android:layout_marginHorizontal="15dp"
+            android:layout_marginBottom="20dp"
+            android:weightSum="2">
+
+            <!-- Nút Exit -->
+            <Button
+                android:id="@+id/btnExit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Exit"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#FF5C5C"
+                android:layout_marginHorizontal="8dp" />
+
+            <!-- Nút Save -->
+            <Button
+                android:id="@+id/btnSave"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Save"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#3A8DFF"
+                android:layout_marginHorizontal="8dp" />
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</RelativeLayout>

@@ -1,0 +1,49 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/bottomNav"
+    android:layout_alignParentBottom="true"
+    android:layout_width="match_parent"
+    android:layout_height="56dp"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:background="@color/white">
+
+    <View
+        android:id="@+id/bottomLine"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="#D7D7D7" />
+
+    <LinearLayout
+        android:id="@+id/bottomIcons"
+        android:layout_below="@id/bottomLine"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@color/white">
+        <ImageView
+            android:id="@+id/iconHome"
+            android:src="@drawable/ic_home"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="8dp"
+            app:tint="@color/bottom_nav_icon_color"/>
+
+        <ImageView
+            android:id="@+id/iconCalendar"
+            android:src="@drawable/ic_calendar"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="8dp"
+            app:tint="@color/bottom_nav_icon_color"/>
+
+        <ImageView
+            android:id="@+id/iconUser"
+            android:src="@drawable/ic_user"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="8dp"
+            app:tint="@color/bottom_nav_icon_color"/>
+    </LinearLayout>
+</RelativeLayout>
