@@ -23,9 +23,9 @@ function generateRefreshToken(user) {
   );
 }
 
-export async function signUpService({ email, phone_number, address, birthday, password }) {
-  if (!email || !phone_number || !password) {
-    throw { status: 400, message: "Cần nhập đầy đủ Email, số điện thoại và mật khẩu" };
+export async function signUpService({ email, phone_number, username, address, birthday, password }) {
+  if (!email || !phone_number || !username || !password) {
+    throw { status: 400, message: "Cần nhập đầy đủ Email, số điện thoại, tên người dùng và mật khẩu" };
   }
 
   const existingEmail = await User.findOne({ where: { email } });
@@ -35,7 +35,7 @@ export async function signUpService({ email, phone_number, address, birthday, pa
   if (existingPhone) throw { status: 400, message: "Số điện thoại đã tồn tại" };
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  return await User.create({ email, phone_number, address, birthday, password: hashedPassword });
+  return await User.create({ email, phone_number, username, address, birthday, password: hashedPassword });
 }
 
 export async function signInService({ email, phone_number, password }) {
@@ -74,13 +74,14 @@ export async function getUserByIdService(user_id) {
 }
 
 
-export async function updateUserProfileService(user_id, {email, phone_number, address, birthday }) {
+export async function updateUserProfileService(user_id, {email, phone_number, username, address, birthday }) {
   const user = await User.findByPk(user_id);
   if (!user) {
     throw { status: 404, message: "Người dùng không tồn tại" };
   } 
   if (email) user.email = email;
   if (phone_number) user.phone_number = phone_number;
+  if (username) user.username = username;
   if (address) user.address = address;
   if (birthday) user.birthday = birthday;
   await user.save();

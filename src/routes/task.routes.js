@@ -5,6 +5,7 @@ import { viewTasksByUser, changeTaskStatus } from "../controllers/task.controlle
 const TaskRouter = Router();
 
 TaskRouter.get("/user-tasks", authenticateJWT, viewTasksByUser);
+
 TaskRouter.patch("/:task_id/status", authenticateJWT, changeTaskStatus);
 
 export default TaskRouter;

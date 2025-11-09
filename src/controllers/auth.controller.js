@@ -7,6 +7,7 @@ export async function signUp(req, res, next) {
       user_id: newUser.user_id,
       email: newUser.email,
       phone_number: newUser.phone_number,
+      username: newUser.username,
       address: newUser.address,
       birthday: newUser.birthday,
       message: "Đăng ký thành công"
@@ -24,7 +25,7 @@ export async function signIn(req, res, next) {
       message: "Đăng nhập thành công",
       accessToken,
       refreshToken,
-      user: { user_id: user.user_id, email: user.email, phone_number: user.phone_number, address: user.address, birthday: user.birthday }
+      user: { user_id: user.user_id, email: user.email, phone_number: user.phone_number, username: user.username, address: user.address, birthday: user.birthday }
     });
   } catch (err) {
     if (err && err.status) return res.status(err.status).json({ message: err.message });
@@ -39,6 +40,7 @@ export async function getUserById(req, res, next) {
     return res.status(200).json({
       email: user.email,
       phone_number: user.phone_number,
+      username: user.username,
       address: user.address,
       birthday: user.birthday
     });
@@ -55,6 +57,7 @@ export async function updateUserProfile(req, res, next) {
     return res.status(200).json({
       email: updatedUser.email,
       phone_number: updatedUser.phone_number,
+      username: updatedUser.username,
       address: updatedUser.address,
       birthday: updatedUser.birthday,
       message: "Cập nhật thông tin người dùng thành công"

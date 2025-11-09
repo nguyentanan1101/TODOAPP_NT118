@@ -29,7 +29,7 @@ export async function getGroupByUserService(user_id) {
         model: GroupMember,
         as: 'members',
         include: [
-          { model: User, as: 'user', attributes: ['user_id', 'email'] }
+          { model: User, as: 'user', attributes: ['user_id','username' ,'email'] }
         ],
         required: false     
       }

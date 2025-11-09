@@ -12,6 +12,10 @@ export const User = sequelize.define('User', {
     allowNull: false,
     unique: true
   },
+  username: {
+    type: DataTypes.STRING(50),
+    allowNull: false
+  },
   phone_number: {
     type: DataTypes.STRING(20),
     unique: true,

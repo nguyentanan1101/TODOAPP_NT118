@@ -1,6 +1,7 @@
 import { DataTypes, Sequelize } from 'sequelize';
 import sequelize from '../config/db.js';
 
+
 export const Project = sequelize.define('Project', {
   project_id: {
     type: DataTypes.INTEGER,
@@ -38,10 +39,20 @@ export const Project = sequelize.define('Project', {
     },
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE'
+  },
+  group_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false, 
+    references: {
+      model: 'user_group',
+      key: 'group_id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE'
   }
 }, {
   tableName: 'project',
   timestamps: false
 });
-export default Project;
 
+export default Project;
