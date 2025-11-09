@@ -5,4 +5,10 @@
     <string name="setting">Setting</string>
     <string name="logout">Sign Out</string>
     <string name="name">Full Name</string>
+
+    <string name="facebook_app_id">1360114005493531</string>
+    <string name="fb_login_protocol_scheme">fb1360114005493531</string>
+    <string name="facebook_client_token">ce0e0bae122fe129b60e6b4e8fa8c3bb</string>
+
+
 </resources>

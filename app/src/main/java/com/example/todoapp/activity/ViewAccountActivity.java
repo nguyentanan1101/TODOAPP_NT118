@@ -1,5 +1,5 @@
 
-package com.example.todoapp.main;
+package com.example.todoapp.activity;
 
 import android.content.Intent;
 import android.os.Bundle;

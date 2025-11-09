@@ -1,4 +1,4 @@
-package com.example.todoapp;
+package com.example.todoapp.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -13,6 +13,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 // Thư viện cần thiết cho việc gạch chân (nếu dùng phương án Java)
 import android.graphics.Paint;
+
+import com.example.todoapp.R;
 
 public class OTPVerificationActivity extends AppCompatActivity {
 

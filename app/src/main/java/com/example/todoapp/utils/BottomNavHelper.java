@@ -8,9 +8,9 @@ import android.animation.ObjectAnimator;
 import android.animation.AnimatorSet;
 
 import com.example.todoapp.R;
-import com.example.todoapp.main.MainActivity;
-import com.example.todoapp.main.ProfileActivity;
-import com.example.todoapp.main.CalendarActivity;
+import com.example.todoapp.activity.MainActivity;
+import com.example.todoapp.activity.ProfileActivity;
+import com.example.todoapp.activity.CalendarActivity;
 
 public class BottomNavHelper {
 

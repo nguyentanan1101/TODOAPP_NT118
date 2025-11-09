@@ -1,4 +1,4 @@
-package com.example.todoapp.main;
+package com.example.todoapp.activity;
 
 import android.app.DatePickerDialog;
 import android.os.Bundle;

@@ -6,12 +6,12 @@
     android:orientation="vertical"
     android:padding="8dp"
     android:background="#FEF7FF"
-    tools:context=".LoginActivity">
+    tools:context=".activity.LoginActivity">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="TO–DO"
+        android:text="TODO"
         android:gravity="center_horizontal"
         android:textSize="100sp"
         android:fontFamily="@font/nanum_brush_script"
@@ -146,6 +146,7 @@
             android:layout_marginBottom="20dp">
 
             <ImageView
+                android:id="@+id/google_logo"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:src="@drawable/google_logo"
@@ -153,6 +154,7 @@
                 android:contentDescription="Google Login" />
 
             <ImageView
+                android:id="@+id/facebook_logo"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:src="@drawable/facebook_logo"

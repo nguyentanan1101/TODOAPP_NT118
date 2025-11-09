@@ -1,4 +1,4 @@
-package com.example.todoapp;
+package com.example.todoapp.activity;
 
 
 
@@ -11,6 +11,8 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.todoapp.R;
 
 public class RecoverPasswordActivity extends AppCompatActivity {
 

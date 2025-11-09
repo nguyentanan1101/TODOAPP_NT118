@@ -6,7 +6,7 @@
     android:orientation="vertical"
     android:padding="8dp"
     android:background="#FEF7FF"
-    tools:context=".OTPVerificationActivity">
+    tools:context=".activity.OTPVerificationActivity">
 
     <TextView
         android:layout_width="match_parent"
