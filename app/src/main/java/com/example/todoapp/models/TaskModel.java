@@ -1,17 +1,22 @@
 package com.example.todoapp.models;
 
-public class TaskModel {
-    private String title;
-    private String details;
-    private int color; // mã màu nền
+import java.util.List;
 
-    public TaskModel(String title, String details, int color) {
+public class TaskModel {
+
+    public enum TaskType { PERSONAL, WORK_PRIVATE, WORK_GROUP }
+
+    private String title;
+    private TaskType type;
+    private List<SubTaskModel> subTasks;
+
+    public TaskModel(String title, TaskType type, List<SubTaskModel> subTasks) {
         this.title = title;
-        this.details = details;
-        this.color = color;
+        this.type = type;
+        this.subTasks = subTasks;
     }
 
     public String getTitle() { return title; }
-    public String getDetails() { return details; }
-    public int getColor() { return color; }
+    public TaskType getType() { return type; }
+    public List<SubTaskModel> getSubTasks() { return subTasks; }
 }

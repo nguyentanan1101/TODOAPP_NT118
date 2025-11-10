@@ -1,6 +1,7 @@
 package com.example.todoapp.activity;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -17,11 +18,11 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 
 public class ProfileActivity extends AppCompatActivity {
 
-    GoogleSignInOptions gso;
-    GoogleSignInClient gsc;
-    TextView name, email;
-    LinearLayout yourAccount;
-    LinearLayout signOut;
+    private GoogleSignInOptions gso;
+    private GoogleSignInClient gsc;
+    private LinearLayout yourAccount;
+    private LinearLayout signOut;
+    private TextView tvName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,8 +32,10 @@ public class ProfileActivity extends AppCompatActivity {
         // Ánh xạ các view
         yourAccount = findViewById(R.id.your_account);
         signOut = findViewById(R.id.sign_out);
-        name = findViewById(R.id.tvName);
-        email = findViewById(R.id.tvPhone); // nếu muốn hiện email, thay id tương ứng
+        tvName = findViewById(R.id.tvName);
+
+        // Load dữ liệu người dùng
+        loadUserData();
 
         // Google Sign-In setup
         gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -46,8 +49,14 @@ public class ProfileActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // Xử lý đăng xuất (Google + Facebook)
+        // Xử lý đăng xuất (Google + Facebook + xóa session)
         signOut.setOnClickListener(v -> {
+            // Xóa thông tin user trong SharedPreferences
+            SharedPreferences sp = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
+            SharedPreferences.Editor editor = sp.edit();
+            editor.clear();
+            editor.apply();
+
             // Google Sign-Out
             gsc.signOut().addOnCompleteListener(task -> {
                 // Facebook Sign-Out
@@ -65,5 +74,18 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Cấu hình Bottom Navigation
         BottomNavHelper.setupBottomNav(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Khi quay lại màn hình này (ví dụ sau khi chỉnh sửa thông tin), cập nhật lại tên
+        loadUserData();
+    }
+
+    private void loadUserData() {
+        SharedPreferences prefs = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
+        String username = prefs.getString("username", "Your Full Name");
+        tvName.setText(username);
     }
 }

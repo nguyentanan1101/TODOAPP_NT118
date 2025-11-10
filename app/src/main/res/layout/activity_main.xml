@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFF"
-    tools:context="activity.MainActivity"
+    tools:context=".MainActivity"
     android:fitsSystemWindows="true">
 
     <!-- Thanh trên cùng -->
@@ -30,19 +30,19 @@
             android:layout_marginStart="16dp"/>
 
         <ImageView
+            android:id="@+id/btnAdd"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_add"
+            android:layout_alignParentEnd="true" />
+
+        <ImageView
             android:id="@+id/btnNotification"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/ic_bell"
             android:layout_toStartOf="@id/btnAdd"
             android:layout_marginEnd="16dp"/>
-
-        <ImageView
-            android:id="@+id/btnAdd"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_add"
-            android:layout_alignParentEnd="true" />
     </RelativeLayout>
 
     <!-- Các tab lọc -->
@@ -117,11 +117,11 @@
             android:layout_marginEnd="32dp">
 
             <View
-            android:layout_width="12dp"
-            android:layout_height="12dp"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/dot_shape"
-            android:backgroundTint="#FFA500" />  <!-- Cam -->
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/dot_shape"
+                android:backgroundTint="#FFA500" />  <!-- Cam -->
 
             <View
                 android:layout_width="12dp"
@@ -160,23 +160,18 @@
                 android:textSize="16sp"
                 android:textColor="#212121"/>
         </LinearLayout>
-
     </LinearLayout>
 
-
-    <!-- Danh sách Task (RecyclerView) -->
-
-    <!-- Thanh điều hướng dưới -->
+    <!-- RecyclerView hiển thị task -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerTasks"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/completeTasks"
+        android:layout_height="0dp"
         android:layout_below="@id/labelDots"
-        android:layout_marginTop="0dp"
-        android:layout_marginBottom="0dp"
+        android:layout_above="@id/completeTasks"
         android:padding="8dp" />
 
+    <!-- Thanh check complete tasks -->
     <LinearLayout
         android:id="@+id/completeTasks"
         android:layout_width="match_parent"
@@ -195,11 +190,10 @@
             android:textColor="#5E35B1"
             android:layout_gravity="center_vertical"
             android:layout_margin="4dp"/>
-
     </LinearLayout>
 
+    <!-- Bottom navigation -->
     <include
         layout="@layout/layout_bottom_nav"
         android:id="@+id/bottomNav" />
-
 </RelativeLayout>

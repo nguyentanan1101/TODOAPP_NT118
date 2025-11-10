@@ -73,7 +73,7 @@
                 android:layout_below="@id/etPassword"
                 android:layout_alignParentEnd="true"
                 android:layout_marginTop="5dp"
-                android:textSize="10sp"
+                android:textSize="14sp"
                 android:text="Forgot password?"
                 android:textColor="#6750A4"
                 android:textStyle="bold"
@@ -100,7 +100,7 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="20dp"
             android:text="Sign In"
-            android:textSize="16sp"
+            android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="#6750A4"
             android:backgroundTint="#4DD9D9D9" />

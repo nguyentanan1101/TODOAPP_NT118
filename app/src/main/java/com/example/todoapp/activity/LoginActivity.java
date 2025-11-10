@@ -42,7 +42,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private EditText etAccount, etPassword;
     private Button btnSignIn;
-    private TextView tvPasswordError, tvForgotPassword, tvSignUp;
+    private TextView tvForgotPassword, tvSignUp;
     private ImageView googleBtn, facebookBtn;
 
     private GoogleSignInOptions gso;
@@ -50,32 +50,35 @@ public class LoginActivity extends AppCompatActivity {
     private CallbackManager callbackManager;
 
     private OkHttpClient client = new OkHttpClient();
-    private static final String SERVER_URL = "http://163.61.110.132:4000/api/auth/sign-in"; // backend login endpoint
+    private static final String SERVER_URL = "http://163.61.110.132:4000/api/auth/sign-in";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        // --- Kiểm tra token trước khi hiển thị login ---
+        SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+        String token = sp.getString("accessToken", "");
+        if (!token.isEmpty()) {
+            navigateToMainActivity(); // vẫn còn token → tự động vào MainActivity
+            return;
+        }
+
         // Ánh xạ View
         etAccount = findViewById(R.id.etAccount);
         etPassword = findViewById(R.id.etPassword);
         btnSignIn = findViewById(R.id.btnSignIn);
-        tvPasswordError = findViewById(R.id.tvPasswordError);
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         tvSignUp = findViewById(R.id.tvSignUp);
         googleBtn = findViewById(R.id.google_logo);
         facebookBtn = findViewById(R.id.facebook_logo);
 
-        // Setup đăng nhập App
         btnSignIn.setOnClickListener(v -> handleAppSignIn());
         tvForgotPassword.setOnClickListener(v -> startActivity(new Intent(this, RecoverPasswordActivity.class)));
         tvSignUp.setOnClickListener(v -> startActivity(new Intent(this, RegisterActivity.class)));
 
-        // Setup đăng nhập Google
         setupGoogleSignIn();
-
-        // Setup đăng nhập Facebook
         setupFacebookSignIn();
     }
 
@@ -85,7 +88,7 @@ public class LoginActivity extends AppCompatActivity {
         String password = etPassword.getText().toString();
 
         if (account.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Vui lòng nhập Email/SĐT và mật khẩu", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please enter your Email/Phone number and Password.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -111,7 +114,7 @@ public class LoginActivity extends AppCompatActivity {
                 public void onFailure(Call call, IOException e) {
                     e.printStackTrace();
                     runOnUiThread(() ->
-                            Toast.makeText(LoginActivity.this, "Không thể kết nối server", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(LoginActivity.this, "Unable to connect to the server.", Toast.LENGTH_SHORT).show()
                     );
                 }
 
@@ -120,7 +123,7 @@ public class LoginActivity extends AppCompatActivity {
                     String res = response.body().string();
                     if (!response.isSuccessful()) {
                         runOnUiThread(() ->
-                                Toast.makeText(LoginActivity.this, "Login thất bại", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(LoginActivity.this, "Login failed.", Toast.LENGTH_SHORT).show()
                         );
                         return;
                     }
@@ -131,26 +134,38 @@ public class LoginActivity extends AppCompatActivity {
                         String accessToken = obj.getString("accessToken");
                         String refreshToken = obj.getString("refreshToken");
 
-                        SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
-                        SharedPreferences.Editor editor = sp.edit();
-                        editor.putString("user_id", user.getString("user_id"));
-                        editor.putString("user_name", user.getString("username"));
-                        editor.putString("accessToken", accessToken);
-                        editor.putString("refreshToken", refreshToken);
-                        editor.apply();
-
+                        saveUserSession(user, accessToken, refreshToken);
                         runOnUiThread(LoginActivity.this::navigateToMainActivity);
 
                     } catch (Exception e) {
+                        e.printStackTrace();
                         runOnUiThread(() ->
-                                Toast.makeText(LoginActivity.this, "Phản hồi server không hợp lệ", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(LoginActivity.this, "Invalid server response.", Toast.LENGTH_SHORT).show()
                         );
                     }
+
                 }
             });
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void saveUserSession(JSONObject user, String accessToken, String refreshToken) {
+        SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+
+        editor.putString("accessToken", accessToken);
+        editor.putString("refreshToken", refreshToken);
+
+        editor.putString("user_id", user.optString("user_id"));
+        editor.putString("username", user.optString("username"));
+        editor.putString("email", user.optString("email"));
+        editor.putString("phone_number", user.optString("phone_number"));
+        editor.putString("address", user.optString("address"));
+        editor.putString("birthday", user.optString("birthday"));
+
+        editor.apply();
     }
 
     // ------------------------- GOOGLE LOGIN -------------------------
@@ -172,8 +187,18 @@ public class LoginActivity extends AppCompatActivity {
     private void handleGoogleSignInResult(Intent data) {
         Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
         try {
-            task.getResult(ApiException.class);
-            navigateToMainActivity();
+            GoogleSignInAccount account = task.getResult(ApiException.class);
+            if (account != null) {
+                // Lưu tạm thông tin Google vào SharedPreferences nếu muốn
+                SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sp.edit();
+                editor.putString("username", account.getDisplayName());
+                editor.putString("email", account.getEmail());
+                editor.putString("accessToken", "google"); // chỉ để kiểm tra phiên
+                editor.apply();
+
+                navigateToMainActivity();
+            }
         } catch (ApiException e) {
             Toast.makeText(this, "Google login failed", Toast.LENGTH_SHORT).show();
         }
@@ -187,6 +212,12 @@ public class LoginActivity extends AppCompatActivity {
                 new FacebookCallback<LoginResult>() {
                     @Override
                     public void onSuccess(LoginResult loginResult) {
+                        // Lưu tạm thông tin Facebook nếu cần
+                        SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sp.edit();
+                        editor.putString("accessToken", "facebook");
+                        editor.apply();
+
                         navigateToMainActivity();
                     }
 
@@ -209,9 +240,7 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        // Google
         if (requestCode == 1000) handleGoogleSignInResult(data);
-        // Facebook
         callbackManager.onActivityResult(requestCode, resultCode, data);
     }
 

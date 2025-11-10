@@ -50,8 +50,6 @@ public class OTPVerificationActivity extends AppCompatActivity {
                 handleSendAgain();
             }
         });
-
-        // CHÚ Ý: Đã xóa xử lý nút btnVerify vì bạn đã xóa button khỏi XML
     }
 
     private void setupOtpInputListeners() {
