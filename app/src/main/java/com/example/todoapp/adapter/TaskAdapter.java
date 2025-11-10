@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -47,6 +48,18 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             case WORK_GROUP: holder.cardView.setCardBackgroundColor(Color.parseColor("#2196F3")); break;
         }
 
+        // Hiển thị nút xóa chỉ cho task cá nhân
+        if(task.getType() == TaskModel.TaskType.PERSONAL) {
+            holder.btnDelete.setVisibility(View.VISIBLE);
+            holder.btnDelete.setOnClickListener(v -> {
+                taskList.remove(position);
+                notifyItemRemoved(position);
+                notifyItemRangeChanged(position, taskList.size());
+            });
+        } else {
+            holder.btnDelete.setVisibility(View.GONE);
+        }
+
         // hiển thị subtask
         holder.subtaskContainer.removeAllViews();
         for(SubTaskModel sub : task.getSubTasks()) {
@@ -67,12 +80,14 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public int getItemCount() { return taskList.size(); }
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
+        ImageView btnDelete;
         TextView tvTaskName;
         LinearLayout subtaskContainer;
         CardView cardView;
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
+            btnDelete = itemView.findViewById(R.id.btnDelete); // ánh xạ nút xóa
             tvTaskName = itemView.findViewById(R.id.tvTaskName);
             subtaskContainer = itemView.findViewById(R.id.subtaskContainer);
             cardView = itemView.findViewById(R.id.taskCard);
