@@ -19,11 +19,18 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import android.content.SharedPreferences;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+
 public class TaskDetailActivity extends AppCompatActivity {
 
     private RecyclerView recyclerSubTasks;
     private TextView tvTaskTitle;
-    private ImageView btnBack;
+    private ImageView btnBack, btnTick;
+    private TaskModel task; // lưu task hiện tại toàn cục
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,16 +39,57 @@ public class TaskDetailActivity extends AppCompatActivity {
 
         tvTaskTitle = findViewById(R.id.tvTaskTitle);
         btnBack = findViewById(R.id.btnBack);
+        btnTick = findViewById(R.id.btnTick);
         recyclerSubTasks = findViewById(R.id.recyclerSubTasks);
 
         btnBack.setOnClickListener(v -> finish());
 
-        TaskModel task = (TaskModel) getIntent().getSerializableExtra("TASK");
-        if (task != null) {
+        // Lấy task từ Intent
+        task = (TaskModel) getIntent().getSerializableExtra("TASK");
+        if(task != null) {
+            // Load trạng thái đã lưu từ SharedPreferences
+            loadSubTasksState(task);
+
             tvTaskTitle.setText(task.getTitle());
             showGroupedSubTasks(task.getSubTasks());
         }
+
+        btnTick.setOnClickListener(v -> {
+            if(task != null) {
+                // Lấy adapter hiện tại
+                SubTaskGroupAdapter adapter = (SubTaskGroupAdapter) recyclerSubTasks.getAdapter();
+                if(adapter != null) {
+                    List<SubTaskModel> updatedSubTasks = adapter.getAllSubTasks();
+                    task.setSubTasks(updatedSubTasks); // cập nhật trạng thái
+                }
+                saveSubTasksState(task); // lưu vào SharedPreferences
+            }
+            finish();
+        });
     }
+    private void saveSubTasksState(TaskModel task) {
+        SharedPreferences prefs = getSharedPreferences("TASK_PREFS", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        Gson gson = new Gson();
+        String json = gson.toJson(task.getSubTasks());
+        editor.putString(task.getTitle(), json); // dùng title làm key tạm thời
+        editor.apply();
+    }
+
+    private void loadSubTasksState(TaskModel task) {
+        SharedPreferences prefs = getSharedPreferences("TASK_PREFS", MODE_PRIVATE);
+        if(!prefs.contains(task.getTitle())) return;
+
+        String json = prefs.getString(task.getTitle(), null);
+        if(json != null) {
+            Gson gson = new Gson();
+            List<SubTaskModel> savedSubTasks = gson.fromJson(json, new TypeToken<List<SubTaskModel>>(){}.getType());
+            task.setSubTasks(savedSubTasks);
+        }
+    }
+
+
+
 
     private void showGroupedSubTasks(List<SubTaskModel> subTasks) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());

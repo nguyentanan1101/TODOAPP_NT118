@@ -37,7 +37,18 @@
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="#212121" />
+
         </RelativeLayout>
+
+        <ImageView
+            android:id="@+id/btnTick"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_tick"
+            android:contentDescription="Tick"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"/>
+
     </RelativeLayout>
 
     <!-- Danh sách subtask chia theo due date -->

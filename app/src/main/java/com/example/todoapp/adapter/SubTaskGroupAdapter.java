@@ -11,7 +11,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.todoapp.R;
 import com.example.todoapp.models.SubTaskGroup;
+import com.example.todoapp.models.SubTaskModel;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SubTaskGroupAdapter extends RecyclerView.Adapter<SubTaskGroupAdapter.GroupViewHolder> {
@@ -23,6 +25,14 @@ public class SubTaskGroupAdapter extends RecyclerView.Adapter<SubTaskGroupAdapte
         this.context = context;
         this.groups = groups;
     }
+    public List<SubTaskModel> getAllSubTasks() {
+        List<SubTaskModel> all = new ArrayList<>();
+        for(SubTaskGroup group : groups) {
+            all.addAll(group.getSubTasks());
+        }
+        return all;
+    }
+
 
     @Override
     public GroupViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {

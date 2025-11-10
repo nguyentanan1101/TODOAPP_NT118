@@ -39,12 +39,16 @@ public class SubTaskAdapter extends RecyclerView.Adapter<SubTaskAdapter.ViewHold
         // Set tiêu đề
         holder.tvTitle.setText(subTask.getTitle());
 
-        // Set checkbox
+        // Xoá listener trước khi set trạng thái
+        holder.chkSubtask.setOnCheckedChangeListener(null);
         holder.chkSubtask.setChecked(subTask.isDone());
+
+        // Gán listener mới
         holder.chkSubtask.setOnCheckedChangeListener((buttonView, isChecked) -> {
             subTask.setDone(isChecked);
         });
     }
+
 
     @Override
     public int getItemCount() {
