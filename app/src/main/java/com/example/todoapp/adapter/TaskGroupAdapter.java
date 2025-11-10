@@ -25,9 +25,18 @@ public class TaskGroupAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     private static final int TYPE_HEADER = 0;
     private static final int TYPE_TASK = 1;
+    public interface OnTaskClickListener {
+        void onTaskClick(TaskModel task);
+    }
 
     private Context context;
     private List<TaskItem> items;
+    private OnTaskClickListener listener;
+
+    public void setOnTaskClickListener(OnTaskClickListener listener) {
+        this.listener = listener;
+    }
+
 
     public TaskGroupAdapter(Context context, List<TaskGroup> groups) {
         this.context = context;
@@ -68,17 +77,18 @@ public class TaskGroupAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             ((HeaderViewHolder) holder).tvHeader.setText(item.getHeaderTitle());
         } else if(holder instanceof TaskAdapter.TaskViewHolder) {
             TaskAdapter.TaskViewHolder h = (TaskAdapter.TaskViewHolder) holder;
-            h.tvTaskName.setText(item.getTask().getTitle());
+            TaskModel task = item.getTask();
+            h.tvTaskName.setText(task.getTitle());
 
             // màu card
-            switch(item.getTask().getType()) {
+            switch(task.getType()) {
                 case PERSONAL: h.cardView.setCardBackgroundColor(Color.parseColor("#4CAF50")); break;
                 case WORK_PRIVATE: h.cardView.setCardBackgroundColor(Color.parseColor("#FF9800")); break;
                 case WORK_GROUP: h.cardView.setCardBackgroundColor(Color.parseColor("#2196F3")); break;
             }
 
             h.subtaskContainer.removeAllViews();
-            for(SubTaskModel sub : item.getTask().getSubTasks()) {
+            for(SubTaskModel sub : task.getSubTasks()) {
                 TextView subTv = new TextView(context);
                 subTv.setText("• " + sub.getTitle());
                 subTv.setTextSize(14f);
@@ -89,7 +99,13 @@ public class TaskGroupAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 subTv.setLayoutParams(params);
                 h.subtaskContainer.addView(subTv);
             }
+
+            // set click
+            h.itemView.setOnClickListener(v -> {
+                if(listener != null) listener.onTaskClick(task);
+            });
         }
+
     }
 
     @Override

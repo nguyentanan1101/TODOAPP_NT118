@@ -118,6 +118,7 @@ public class RegisterActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
                     String res = response.body().string();
+
                     if (!response.isSuccessful()) {
                         runOnUiThread(() ->
                                 Toast.makeText(RegisterActivity.this, "Registration failed.", Toast.LENGTH_SHORT).show()

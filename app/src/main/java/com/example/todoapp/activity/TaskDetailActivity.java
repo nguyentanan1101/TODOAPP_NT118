@@ -1,6 +1,7 @@
 package com.example.todoapp.activity;
 
 import android.os.Bundle;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -13,7 +14,8 @@ import com.example.todoapp.R;
 
 public class TaskDetailActivity extends AppCompatActivity {
 
-    private TextView tvTitle, tvSubtasks;
+    private TextView tvTitle;
+    private LinearLayout tvSubtasks;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

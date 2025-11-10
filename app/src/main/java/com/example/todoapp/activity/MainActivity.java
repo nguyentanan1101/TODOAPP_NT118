@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 
@@ -138,6 +139,14 @@ public class MainActivity extends AppCompatActivity {
 
                 GridLayoutManager layout = new GridLayoutManager(this, 2);
                 TaskGroupAdapter groupAdapter = new TaskGroupAdapter(this, groups);
+                // THÊM CLICK LISTENER CHO TASK
+                groupAdapter.setOnTaskClickListener(task -> {
+                    Intent intent = new Intent(MainActivity.this, TaskDetailActivity.class);
+                    intent.putExtra("TASK_TITLE", task.getTitle());
+                    // thêm dữ liệu khác nếu cần, ví dụ: task ID, subtasks,...
+                    startActivity(intent);
+                });
+
                 groupAdapter.attachToRecyclerView(recyclerView, layout);
                 break;
         }

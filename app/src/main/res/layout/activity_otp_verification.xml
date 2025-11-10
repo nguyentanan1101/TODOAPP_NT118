@@ -118,10 +118,11 @@
                 android:textSize="14sp"
                 android:textColor="#6750A4"
                 android:fontFamily="sans-serif-light"
-                android:textStyle="normal"
+                android:textStyle="bold"
                 android:clickable="true"
                 android:focusable="true"
-                />
+                android:background="@drawable/tv_send_again_bg"
+                android:padding="4dp"/>
 
         </RelativeLayout>
 
