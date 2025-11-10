@@ -1,9 +1,10 @@
 package com.example.todoapp.models;
 
 import java.util.List;
+import java.io.Serializable;
+import java.util.List;
 
-public class TaskModel {
-
+public class TaskModel implements Serializable {
     public enum TaskType { PERSONAL, WORK_PRIVATE, WORK_GROUP }
 
     private String title;
