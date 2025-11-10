@@ -24,7 +24,7 @@ function generateRefreshToken(user) {
 }
 
 export async function signUpService({ email, phone_number, username, address, birthday, password }) {
-  if (!email || !phone_number || !username || !password) {
+  if (!email || !password) {
     throw { status: 400, message: "Cần nhập đầy đủ Email, số điện thoại, tên người dùng và mật khẩu" };
   }
 
