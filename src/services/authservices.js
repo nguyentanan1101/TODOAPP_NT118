@@ -168,6 +168,12 @@ export async function forgotPasswordService(email) {
   return { message: "Reset code sent" };
 }
 
+export async function checkResetTokenService(token) {
+  const user = await User.findOne({ where: { reset_token: token } });
+  if (!user) throw { status: 400, message: "Mã đặt lại mật khẩu không hợp lệ hoặc đã hết hạn" };
+  return user;
+}
+
 export async function resetPasswordService(token, newPassword) {
   const user = await User.findOne({ where: { reset_token: token } });
   if (!user) throw { status: 400, message: "Mã đặt lại mật khẩu không hợp lệ hoặc đã hết hạn" };

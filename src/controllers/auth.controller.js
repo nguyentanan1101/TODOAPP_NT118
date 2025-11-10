@@ -1,4 +1,4 @@
-import { signUpService, signInService, signOutService,getUserByIdService ,resetPasswordService, forgotPasswordService, updateUserProfileService } from "../services/authservices.js";
+import { signUpService, signInService, signOutService,getUserByIdService ,resetPasswordService, forgotPasswordService, updateUserProfileService, checkResetTokenService } from "../services/authservices.js";
 
 export async function signUp(req, res, next) {
   try {
@@ -76,6 +76,19 @@ export async function forgotPassword(req, res, next) {
     return res.status(200).json({ message: "Email đặt lại mật khẩu đã được gửi" });
   } catch (err) {
     if (err && err.status) return res.status(err.status).json({ message: err.message });
+    next(err);
+  }
+}
+
+export async function checkResetToken(req, res, next) {
+  try {
+    const { token } = req.body;
+    await checkResetTokenService(token);
+    return res.status(200).json({ message: "Mã đặt lại mật khẩu hợp lệ" });
+  } catch (err) {
+    if (err && err.status) return res.status(err.status).json({ 
+      reset_token: token,
+      message: err.message });
     next(err);
   }
 }
