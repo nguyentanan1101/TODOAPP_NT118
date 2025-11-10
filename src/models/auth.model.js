@@ -14,12 +14,12 @@ export const User = sequelize.define('User', {
   },
   username: {
     type: DataTypes.STRING(50),
-    allowNull: false
+    allowNull: true
   },
   phone_number: {
     type: DataTypes.STRING(20),
     unique: true,
-    allowNull: false
+    allowNull: true
   },
   address: {
     type: DataTypes.STRING(100),

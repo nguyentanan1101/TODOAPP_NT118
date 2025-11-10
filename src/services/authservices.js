@@ -24,15 +24,21 @@ function generateRefreshToken(user) {
 }
 
 export async function signUpService({ email, phone_number, username, address, birthday, password }) {
-  if (!email || !password) {
-    throw { status: 400, message: "Cần nhập đầy đủ Email, số điện thoại, tên người dùng và mật khẩu" };
+  if ((!email && !phone_number) || !password) {
+    throw { status: 400, message: "Cần nhập Email hoặc số điện thoại và mật khẩu" };
   }
 
-  const existingEmail = await User.findOne({ where: { email } });
-  if (existingEmail) throw { status: 400, message: "Email đã tồn tại" };
+  
+  if (email) {
+    const existingEmail = await User.findOne({ where: { email } });
+    if (existingEmail) throw { status: 400, message: "Email đã tồn tại" };
+  }
 
-  const existingPhone = await User.findOne({ where: { phone_number } });
-  if (existingPhone) throw { status: 400, message: "Số điện thoại đã tồn tại" };
+  
+  if (phone_number) {
+    const existingPhone = await User.findOne({ where: { phone_number } });
+    if (existingPhone) throw { status: 400, message: "Số điện thoại đã tồn tại" };
+  }
 
   const hashedPassword = await bcrypt.hash(password, 10);
   console.log("Data to insert:", {
