@@ -150,7 +150,7 @@ export async function forgotPasswordService(email) {
   const user = await User.findOne({ where: { email } });
   if (!user) throw { status: 400, message: "Không tìm thấy tài khoản với email này" };
 
-  const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const resetCode = Math.floor(1000 + Math.random() * 9000).toString();
 
   user.reset_token = resetCode;
   user.reset_expires = Date.now() + 15 * 60 * 1000;
