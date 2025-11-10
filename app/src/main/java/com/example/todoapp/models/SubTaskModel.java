@@ -2,7 +2,7 @@ package com.example.todoapp.models;
 
 public class SubTaskModel {
     private String title;
-    private String dueDate; // Ngầm dùng, không hiển thị
+    private String dueDate; // yyyy-MM-dd
 
     public SubTaskModel(String title, String dueDate) {
         this.title = title;

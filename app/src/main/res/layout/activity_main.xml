@@ -162,7 +162,7 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- RecyclerView hiển thị task -->
+    <!-- RecyclerView hiển thị task theo nhóm -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerTasks"
         android:layout_width="match_parent"
