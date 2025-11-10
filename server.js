@@ -7,12 +7,12 @@ import initAssociations from './src/models/association.model.js';
 
 const app = express();
 app.use(cors({
-  origin: '*',       
+  origin: 'http://localhost:5173',      
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: false
+  credentials: true
 }));
-app.use(express.json());
+app.use(express.json());  
 app.use('/api', router);
 
 app.get('/', (req, res) => {
