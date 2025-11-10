@@ -100,6 +100,18 @@ public class TaskGroupAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 h.subtaskContainer.addView(subTv);
             }
 
+            if(task.getType() == TaskModel.TaskType.PERSONAL) {
+                h.btnDelete.setVisibility(View.VISIBLE);
+                h.btnDelete.setOnClickListener(v -> {
+                    int pos = position;
+                    items.remove(pos); // xóa task
+                    notifyItemRemoved(pos);
+                    notifyItemRangeChanged(pos, items.size());
+                });
+            } else {
+                h.btnDelete.setVisibility(View.GONE);
+            }
+
             // set click
             h.itemView.setOnClickListener(v -> {
                 if(listener != null) listener.onTaskClick(task);

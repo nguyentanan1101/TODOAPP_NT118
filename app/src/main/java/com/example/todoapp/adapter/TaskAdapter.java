@@ -51,14 +51,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         // Hiển thị nút xóa chỉ cho task cá nhân
         if(task.getType() == TaskModel.TaskType.PERSONAL) {
             holder.btnDelete.setVisibility(View.VISIBLE);
-            holder.btnDelete.setOnClickListener(v -> {
-                taskList.remove(position);
-                notifyItemRemoved(position);
-                notifyItemRangeChanged(position, taskList.size());
-            });
         } else {
             holder.btnDelete.setVisibility(View.GONE);
         }
+
 
         // hiển thị subtask
         holder.subtaskContainer.removeAllViews();
