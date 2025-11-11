@@ -4,6 +4,7 @@ import TaskRouter from './task.routes.js';
 import GroupRouter from './group.routes.js';
 import ProjectRouter from './project.routes.js';
 import PerformanceRouter from './performance.routes.js';
+import SubTaskRouter from './subtask.route.js';
 
 const router = Router();
 
@@ -20,6 +21,9 @@ router.use('/groups', GroupRouter);
 
 
 router.use('/performance', PerformanceRouter);
+
+
+router.use('/subtask', SubTaskRouter);
 
 
 export default router;
