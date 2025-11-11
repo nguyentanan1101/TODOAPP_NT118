@@ -7,7 +7,7 @@ import initAssociations from './src/models/association.model.js';
 
 const app = express();
 app.use(cors({
-  origin: 'http://localhost:5173',      
+  origin: ['http://localhost:5173', 'https://todowebadimin.vercel.app'],      
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
