@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F4F4F4"
-    tools:context=".activity.ViewAccountActivity">
+    tools:context=".activity.ViewAccountActivity"
+    android:fitsSystemWindows="true">
 
     <!-- Thanh tiêu đề -->
     <RelativeLayout

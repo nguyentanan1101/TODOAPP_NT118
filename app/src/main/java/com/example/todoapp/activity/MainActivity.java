@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private List<TaskModel> taskList;
-    private LinearLayout labelDots;
+    private LinearLayout labelDots, completeTasks;
     private Button btnToday, btnPersonal, btnWork;
 
     @Override
@@ -39,6 +39,12 @@ public class MainActivity extends AppCompatActivity {
 
         initViews();
         initButtons();
+
+        completeTasks.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, CompletedTasksActivity.class);
+            startActivity(intent);
+        });
+
         createDemoTasks();
         filterTasks("TODAY"); // mặc định
     }
@@ -49,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
         btnToday = findViewById(R.id.btnToday);
         btnPersonal = findViewById(R.id.btnPersonal);
         btnWork = findViewById(R.id.btnWork);
+        completeTasks = findViewById(R.id.completeTasks);
     }
 
     private void initButtons() {

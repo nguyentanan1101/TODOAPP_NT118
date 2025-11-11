@@ -15,6 +15,9 @@
         android:theme="@style/Theme.TODOAPP"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".activity.CompletedTasksActivity"
+            android:exported="false" />
+        <activity
             android:name=".activity.TaskDetailActivity"
             android:exported="false" />
 
@@ -28,19 +31,19 @@
         <activity
             android:name=".activity.ResetPasswordActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustResize"></activity>
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activity.OTPVerificationActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustResize"></activity>
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activity.RecoverPasswordActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustResize"></activity>
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activity.RegisterActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustResize"></activity>
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activity.ViewAccountActivity"
             android:exported="false" />
