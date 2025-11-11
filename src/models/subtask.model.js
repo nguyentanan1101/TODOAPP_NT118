@@ -26,6 +26,10 @@ export const Subtask = sequelize.define('Subtask', {
     allowNull: false,
     defaultValue: Sequelize.literal('CURRENT_DATE')
   },
+  due_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: false
+  },
   task_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
