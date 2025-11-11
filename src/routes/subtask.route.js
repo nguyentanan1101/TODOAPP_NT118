@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticateJWT } from "../middleware/auth.middleware.js";
-import { viewSubTaskByTask, changeSubtaskStatusService } from "../controllers/subtask.controller.js";
+import { viewSubTaskByTask, changeSubtaskStatus } from "../controllers/subtask.controller.js";
 
 
 const SubTaskRouter = Router();
