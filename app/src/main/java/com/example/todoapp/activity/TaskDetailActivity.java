@@ -1,9 +1,10 @@
 package com.example.todoapp.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -14,23 +15,31 @@ import com.example.todoapp.adapter.SubTaskGroupAdapter;
 import com.example.todoapp.models.SubTaskGroup;
 import com.example.todoapp.models.SubTaskModel;
 import com.example.todoapp.models.TaskModel;
+import com.google.gson.Gson;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import android.content.SharedPreferences;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class TaskDetailActivity extends AppCompatActivity {
 
     private RecyclerView recyclerSubTasks;
     private TextView tvTaskTitle;
     private ImageView btnBack, btnTick;
-    private TaskModel task; // lưu task hiện tại toàn cục
+    private TaskModel task;
 
+    private OkHttpClient client = new OkHttpClient();
+    private static final String UPDATE_SUBTASK_URL = "http://163.61.110.132:4000/api/subtask/";
+    private Gson gson = new Gson();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,52 +53,41 @@ public class TaskDetailActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
 
-        // Lấy task từ Intent
         task = (TaskModel) getIntent().getSerializableExtra("TASK");
-        if(task != null) {
-            // Load trạng thái đã lưu từ SharedPreferences
-            loadSubTasksState(task);
-
+        if (task != null) {
             tvTaskTitle.setText(task.getTitle());
             showGroupedSubTasks(task.getSubTasks());
         }
 
         btnTick.setOnClickListener(v -> {
-            if(task != null) {
-                // Lấy adapter hiện tại
+            if (task != null) {
                 SubTaskGroupAdapter adapter = (SubTaskGroupAdapter) recyclerSubTasks.getAdapter();
-                if(adapter != null) {
+                if (adapter != null) {
                     List<SubTaskModel> updatedSubTasks = adapter.getAllSubTasks();
-                    task.setSubTasks(updatedSubTasks); // cập nhật trạng thái
+                    task.setSubTasks(updatedSubTasks);
+                    updateSubTasksToServer(updatedSubTasks); // cập nhật server
+
+                    // Kiểm tra nếu tất cả subtasks Done
+                    boolean allDone = true;
+                    for (SubTaskModel sub : updatedSubTasks) {
+                        if (!sub.isDone()) {
+                            allDone = false;
+                            break;
+                        }
+                    }
+                    if (allDone) {
+                        task.setStatus("Completed"); // đặt trạng thái Task là Completed
+                    }
                 }
-                saveSubTasksState(task); // lưu vào SharedPreferences
             }
+
+            // Trả task về MainActivity kèm trạng thái mới
+            Intent intent = new Intent();
+            intent.putExtra("UPDATED_TASK", task);
+            setResult(RESULT_OK, intent);
             finish();
         });
     }
-    private void saveSubTasksState(TaskModel task) {
-        SharedPreferences prefs = getSharedPreferences("TASK_PREFS", MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        Gson gson = new Gson();
-        String json = gson.toJson(task.getSubTasks());
-        editor.putString(task.getTitle(), json); // dùng title làm key tạm thời
-        editor.apply();
-    }
-
-    private void loadSubTasksState(TaskModel task) {
-        SharedPreferences prefs = getSharedPreferences("TASK_PREFS", MODE_PRIVATE);
-        if(!prefs.contains(task.getTitle())) return;
-
-        String json = prefs.getString(task.getTitle(), null);
-        if(json != null) {
-            Gson gson = new Gson();
-            List<SubTaskModel> savedSubTasks = gson.fromJson(json, new TypeToken<List<SubTaskModel>>(){}.getType());
-            task.setSubTasks(savedSubTasks);
-        }
-    }
-
-
-
 
     private void showGroupedSubTasks(List<SubTaskModel> subTasks) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
@@ -98,8 +96,7 @@ public class TaskDetailActivity extends AppCompatActivity {
         c.add(Calendar.DAY_OF_MONTH, 1);
         String tomorrowStr = sdf.format(c.getTime());
 
-        // Gom nhóm subtasks theo due date
-        Comparator<String> dateComparator = (a, b) -> {
+        Map<String, List<SubTaskModel>> map = new TreeMap<>((a, b) -> {
             if (a.equals(b)) return 0;
             if (a.equals("Today")) return -1;
             if (b.equals("Today")) return 1;
@@ -114,9 +111,7 @@ public class TaskDetailActivity extends AppCompatActivity {
             } catch (ParseException e) {
                 return a.compareTo(b);
             }
-        };
-
-        Map<String, List<SubTaskModel>> map = new TreeMap<>(dateComparator);
+        });
 
         for (SubTaskModel sub : subTasks) {
             String due = sub.getDueDate();
@@ -124,8 +119,7 @@ public class TaskDetailActivity extends AppCompatActivity {
             else if (due.equals(todayStr)) due = "Today";
             else if (due.equals(tomorrowStr)) due = "Tomorrow";
 
-            if (!map.containsKey(due)) map.put(due, new ArrayList<>());
-            map.get(due).add(sub);
+            map.computeIfAbsent(due, k -> new ArrayList<>()).add(sub);
         }
 
         List<SubTaskGroup> groups = new ArrayList<>();
@@ -135,5 +129,40 @@ public class TaskDetailActivity extends AppCompatActivity {
 
         recyclerSubTasks.setLayoutManager(new LinearLayoutManager(this));
         recyclerSubTasks.setAdapter(new SubTaskGroupAdapter(this, groups));
+    }
+
+    private void updateSubTasksToServer(List<SubTaskModel> subTasks) {
+        String accessToken = getSharedPreferences("MyAppPrefs", MODE_PRIVATE)
+                .getString("accessToken", "");
+
+        for (SubTaskModel sub : subTasks) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("newStatus", sub.isDone() ? "Done" : "Working");
+            String json = gson.toJson(map);
+
+            RequestBody body = RequestBody.create(json, MediaType.get("application/json; charset=utf-8"));
+            Request request = new Request.Builder()
+                    .url(UPDATE_SUBTASK_URL + sub.getId() + "/status")
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .patch(body)
+                    .build();
+
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    e.printStackTrace();
+                    runOnUiThread(() -> Toast.makeText(TaskDetailActivity.this,
+                            "Update subtask failed", Toast.LENGTH_SHORT).show());
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    if (!response.isSuccessful()) {
+                        runOnUiThread(() -> Toast.makeText(TaskDetailActivity.this,
+                                "Update subtask failed", Toast.LENGTH_SHORT).show());
+                    }
+                }
+            });
+        }
     }
 }

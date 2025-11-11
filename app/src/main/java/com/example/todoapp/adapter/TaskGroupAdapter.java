@@ -25,32 +25,34 @@ public class TaskGroupAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     private static final int TYPE_HEADER = 0;
     private static final int TYPE_TASK = 1;
+
     public interface OnTaskClickListener {
         void onTaskClick(TaskModel task);
     }
 
-    private Context context;
-    private List<TaskItem> items;
+    private final Context context;
+    private final List<TaskItem> items;
     private OnTaskClickListener listener;
 
     public void setOnTaskClickListener(OnTaskClickListener listener) {
         this.listener = listener;
     }
 
-
     public TaskGroupAdapter(Context context, List<TaskGroup> groups) {
         this.context = context;
         this.items = new ArrayList<>();
 
-        for(TaskGroup g : groups) {
-            items.add(new TaskItem(g.getDateTitle())); // header
-            for(TaskModel t : g.getTasks()) {
-                items.add(new TaskItem(t)); // task
+        for (TaskGroup group : groups) {
+            items.add(new TaskItem(group.getDateTitle())); // header
+            for (TaskModel task : group.getTasks()) {
+                items.add(new TaskItem(task)); // task
             }
         }
     }
 
-    public boolean isHeader(int position) { return items.get(position).isHeader(); }
+    private boolean isHeader(int position) {
+        return items.get(position).isHeader();
+    }
 
     @Override
     public int getItemViewType(int position) {
@@ -60,12 +62,13 @@ public class TaskGroupAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if(viewType == TYPE_HEADER) {
-            View view = LayoutInflater.from(context).inflate(R.layout.layout_task_header, parent, false);
+        LayoutInflater inflater = LayoutInflater.from(context);
+        if (viewType == TYPE_HEADER) {
+            View view = inflater.inflate(R.layout.layout_task_header, parent, false);
             return new HeaderViewHolder(view);
         } else {
-            View view = LayoutInflater.from(context).inflate(R.layout.layout_task_item, parent, false);
-            return new TaskAdapter.TaskViewHolder(view); // reuse TaskAdapter.ViewHolder
+            View view = inflater.inflate(R.layout.layout_task_item, parent, false);
+            return new TaskAdapter.TaskViewHolder(view); // reuse ViewHolder
         }
     }
 
@@ -73,56 +76,81 @@ public class TaskGroupAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         TaskItem item = items.get(position);
 
-        if(holder instanceof HeaderViewHolder) {
+        if (holder instanceof HeaderViewHolder) {
             ((HeaderViewHolder) holder).tvHeader.setText(item.getHeaderTitle());
-        } else if(holder instanceof TaskAdapter.TaskViewHolder) {
+        } else if (holder instanceof TaskAdapter.TaskViewHolder) {
             TaskAdapter.TaskViewHolder h = (TaskAdapter.TaskViewHolder) holder;
             TaskModel task = item.getTask();
-            h.tvTaskName.setText(task.getTitle());
 
-            // màu card
-            switch(task.getType()) {
+            // --- Tên task ---
+            h.tvTaskName.setText(task.getTitle() != null ? task.getTitle() : "");
+
+            // --- Màu card theo loại ---
+            switch (task.getType()) {
                 case PERSONAL: h.cardView.setCardBackgroundColor(Color.parseColor("#4CAF50")); break;
                 case WORK_PRIVATE: h.cardView.setCardBackgroundColor(Color.parseColor("#FF9800")); break;
                 case WORK_GROUP: h.cardView.setCardBackgroundColor(Color.parseColor("#2196F3")); break;
             }
 
+            // --- Hiển thị subtask ---
             h.subtaskContainer.removeAllViews();
-            for(SubTaskModel sub : task.getSubTasks()) {
-                TextView subTv = new TextView(context);
-                subTv.setText("• " + sub.getTitle());
-                subTv.setTextSize(14f);
-                subTv.setTextColor(Color.BLACK);
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                params.setMargins(0,4,0,4);
-                subTv.setLayoutParams(params);
-                h.subtaskContainer.addView(subTv);
+            if (task.getSubTasks() != null) {
+                for (SubTaskModel sub : task.getSubTasks()) {
+                    TextView subTv = new TextView(context);
+                    String subText = "• " + sub.getTitle();
+                    if (sub.getDueDate() != null && !sub.getDueDate().isEmpty()) {
+                        subText += " (" + sub.getDueDate() + ")";
+                    }
+                    subTv.setText(subText);
+                    subTv.setTextSize(14f);
+                    subTv.setTextColor(Color.BLACK);
+
+                    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                    );
+                    params.setMargins(0, 4, 0, 4);
+                    subTv.setLayoutParams(params);
+                    h.subtaskContainer.addView(subTv);
+                }
             }
 
-            if(task.getType() == TaskModel.TaskType.PERSONAL) {
+            // --- Hiển thị ngày hoàn thành nếu task done ---
+            if (task.isDone() && task.getCompletedDate() != null && !task.getCompletedDate().isEmpty()) {
+                h.tvCompleted.setVisibility(View.VISIBLE);
+                h.tvCompleted.setText("Completed: " + task.getCompletedDate());
+            } else {
+                h.tvCompleted.setVisibility(View.GONE);
+            }
+
+            // --- Xóa task nếu task cá nhân ---
+            if (task.getType() == TaskModel.TaskType.PERSONAL) {
                 h.btnDelete.setVisibility(View.VISIBLE);
                 h.btnDelete.setOnClickListener(v -> {
-                    int pos = position;
-                    items.remove(pos); // xóa task
-                    notifyItemRemoved(pos);
-                    notifyItemRangeChanged(pos, items.size());
+                    int pos = holder.getAdapterPosition();
+                    if (pos != RecyclerView.NO_POSITION) {
+                        items.remove(pos);
+                        notifyItemRemoved(pos);
+                        notifyItemRangeChanged(pos, items.size());
+                    }
                 });
             } else {
                 h.btnDelete.setVisibility(View.GONE);
             }
 
-            // set click
+            // --- Click vào task ---
             h.itemView.setOnClickListener(v -> {
-                if(listener != null) listener.onTaskClick(task);
+                if (listener != null) listener.onTaskClick(task);
             });
         }
-
     }
 
     @Override
-    public int getItemCount() { return items.size(); }
+    public int getItemCount() {
+        return items.size();
+    }
 
+    // --- Header ViewHolder ---
     static class HeaderViewHolder extends RecyclerView.ViewHolder {
         TextView tvHeader;
         public HeaderViewHolder(@NonNull View itemView) {
@@ -131,7 +159,7 @@ public class TaskGroupAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         }
     }
 
-    // Attach RecyclerView với GridLayoutManager để header chiếm toàn bộ cột
+    // --- Attach RecyclerView với GridLayoutManager để header chiếm toàn bộ cột ---
     public void attachToRecyclerView(RecyclerView recyclerView, GridLayoutManager layoutManager) {
         recyclerView.setLayoutManager(layoutManager);
         layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {

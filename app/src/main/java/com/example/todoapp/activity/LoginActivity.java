@@ -155,15 +155,15 @@ public class LoginActivity extends AppCompatActivity {
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
 
-        editor.putString("accessToken", accessToken);
-        editor.putString("refreshToken", refreshToken);
+        editor.putString("accessToken", accessToken != null ? accessToken : "");
+        editor.putString("refreshToken", refreshToken != null ? refreshToken : "");
 
-        editor.putString("user_id", user.optString("user_id"));
-        editor.putString("username", user.optString("username"));
-        editor.putString("email", user.optString("email"));
-        editor.putString("phone_number", user.optString("phone_number"));
-        editor.putString("address", user.optString("address"));
-        editor.putString("birthday", user.optString("birthday"));
+        editor.putString("user_id", user.optString("user_id", ""));
+        editor.putString("username", user.optString("username", "").equals("null") ? "" : user.optString("username", ""));
+        editor.putString("email", user.optString("email", "").equals("null") ? "" : user.optString("email", ""));
+        editor.putString("phone_number", user.optString("phone_number", "").equals("null") ? "" : user.optString("phone_number", ""));
+        editor.putString("address", user.optString("address", "").equals("null") ? "" : user.optString("address", ""));
+        editor.putString("birthday", user.optString("birthday", "").equals("null") ? "" : user.optString("birthday", ""));
 
         editor.apply();
     }

@@ -17,8 +17,19 @@ import java.util.List;
 
 public class SubTaskAdapter extends RecyclerView.Adapter<SubTaskAdapter.ViewHolder> {
 
-    private Context context;
-    private List<SubTaskModel> subTasks;
+    private final Context context;
+    private final List<SubTaskModel> subTasks;
+
+    // Listener để callback khi checkbox thay đổi
+    public interface OnSubTaskCheckedChangeListener {
+        void onCheckedChanged(SubTaskModel subTask, boolean isChecked);
+    }
+
+    private OnSubTaskCheckedChangeListener listener;
+
+    public void setOnSubTaskCheckedChangeListener(OnSubTaskCheckedChangeListener listener) {
+        this.listener = listener;
+    }
 
     public SubTaskAdapter(Context context, List<SubTaskModel> subTasks) {
         this.context = context;
@@ -36,34 +47,34 @@ public class SubTaskAdapter extends RecyclerView.Adapter<SubTaskAdapter.ViewHold
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         SubTaskModel subTask = subTasks.get(position);
 
-        // Set tiêu đề
-        holder.tvTitle.setText(subTask.getTitle());
+        // Hiển thị tên subtask
+        holder.tvTitle.setText(subTask.getTitle() != null ? subTask.getTitle() : "");
 
-        // Xoá listener trước khi set trạng thái
-        holder.chkSubtask.setOnCheckedChangeListener(null);
-        holder.chkSubtask.setChecked(subTask.isDone());
+        // Đặt trạng thái checkbox theo subTask.isDone()
+        holder.checkbox.setChecked(subTask.isDone());
 
-        // Gán listener mới
-        holder.chkSubtask.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            subTask.setDone(isChecked);
+        // Listener khi checkbox thay đổi
+        holder.checkbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            subTask.setDone(isChecked); // cập nhật trạng thái local
+            if (listener != null) {
+                listener.onCheckedChanged(subTask, isChecked); // callback lên GroupAdapter hoặc Activity
+            }
         });
     }
 
-
     @Override
     public int getItemCount() {
-        return subTasks.size();
+        return subTasks != null ? subTasks.size() : 0;
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        CheckBox chkSubtask;
-        TextView tvTitle, tvDueDate;
+        TextView tvTitle;
+        CheckBox checkbox;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            chkSubtask = itemView.findViewById(R.id.chkSubtask);
             tvTitle = itemView.findViewById(R.id.tvSubTaskTitle);
-            tvDueDate = itemView.findViewById(R.id.tvDueDate);
+            checkbox = itemView.findViewById(R.id.chkSubtask); // trong layout item_subtask.xml
         }
     }
 }

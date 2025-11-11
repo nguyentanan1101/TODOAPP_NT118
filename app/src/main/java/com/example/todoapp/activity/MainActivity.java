@@ -1,34 +1,47 @@
 package com.example.todoapp.activity;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.todoapp.R;
 import com.example.todoapp.adapter.TaskAdapter;
-import com.example.todoapp.adapter.TaskGroupAdapter;
 import com.example.todoapp.models.SubTaskModel;
-import com.example.todoapp.models.TaskGroup;
 import com.example.todoapp.models.TaskModel;
-
 import com.example.todoapp.utils.BottomNavHelper;
 
-import java.text.ParseException;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
-    private List<TaskModel> taskList;
-    private LinearLayout labelDots, completeTasks;
+    private LinearLayout labelDots;
     private Button btnToday, btnPersonal, btnWork;
+    private List<TaskModel> taskList = new ArrayList<>();
+    private TaskAdapter adapter;
+    private OkHttpClient client = new OkHttpClient();
+    private static final String BASE_URL = "http://163.61.110.132:4000/api/tasks/user-tasks";
+    private static final String SUBTASK_URL = "http://163.61.110.132:4000/api/subtask/task/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,29 +50,28 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavHelper.setupBottomNav(this);
 
-        initViews();
-        initButtons();
-
-        completeTasks.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, CompletedTasksActivity.class);
-            startActivity(intent);
-        });
-
-        createDemoTasks();
-        filterTasks("TODAY"); // mặc định
-    }
-
-    private void initViews() {
         recyclerView = findViewById(R.id.recyclerTasks);
         labelDots = findViewById(R.id.labelDots);
         btnToday = findViewById(R.id.btnToday);
         btnPersonal = findViewById(R.id.btnPersonal);
         btnWork = findViewById(R.id.btnWork);
-        completeTasks = findViewById(R.id.completeTasks);
+
+        initButtons();
+
+        adapter = new TaskAdapter(this, taskList);
+        adapter.setOnTaskClickListener(task -> {
+            Intent intent = new Intent(MainActivity.this, TaskDetailActivity.class);
+            intent.putExtra("TASK", task);
+            startActivity(intent);
+        });
+
+        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        recyclerView.setAdapter(adapter);
+
+        fetchTasksFromAPI();
     }
 
     private void initButtons() {
-        selectButton(btnToday);
         btnToday.setOnClickListener(v -> { selectButton(btnToday); filterTasks("TODAY"); });
         btnPersonal.setOnClickListener(v -> { selectButton(btnPersonal); filterTasks("PERSONAL"); });
         btnWork.setOnClickListener(v -> { selectButton(btnWork); filterTasks("WORK"); });
@@ -72,164 +84,140 @@ public class MainActivity extends AppCompatActivity {
         selectedButton.setSelected(true);
     }
 
-    private void createDemoTasks() {
-        taskList = new ArrayList<>();
-        Calendar c = Calendar.getInstance();
-        String today = String.format("%04d-%02d-%02d",
-                c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
-        c.add(Calendar.DAY_OF_MONTH, 1);
-        String tomorrow = String.format("%04d-%02d-%02d",
-                c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
+    private void fetchTasksFromAPI() {
+        SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+        String accessToken = sp.getString("accessToken", "");
 
-        TaskModel task1 = new TaskModel("Đi siêu thị", TaskModel.TaskType.PERSONAL, new ArrayList<>());
-        task1.getSubTasks().add(new SubTaskModel("Mua sữa", today));
-        task1.getSubTasks().add(new SubTaskModel("Mua bánh", ""));
-        task1.getSubTasks().add(new SubTaskModel("Mua rau", ""));
-        taskList.add(task1);
+        Request request = new Request.Builder()
+                .url(BASE_URL)
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .get()
+                .build();
 
-        TaskModel task2 = new TaskModel("Báo cáo tuần", TaskModel.TaskType.WORK_PRIVATE, new ArrayList<>());
-        task2.getSubTasks().add(new SubTaskModel("Hoàn thành biểu mẫu", tomorrow));
-        task2.getSubTasks().add(new SubTaskModel("Gửi email", ""));
-        taskList.add(task2);
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Cannot connect to server", Toast.LENGTH_SHORT).show());
+            }
 
-        TaskModel task3 = new TaskModel("Dự án App nhóm", TaskModel.TaskType.WORK_GROUP, new ArrayList<>());
-        task3.getSubTasks().add(new SubTaskModel("Thiết kế UI", today));
-        task3.getSubTasks().add(new SubTaskModel("Code backend", "2025-12-10"));
-        task3.getSubTasks().add(new SubTaskModel("Test chức năng", "2025-12-11"));
-        taskList.add(task3);
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to load tasks", Toast.LENGTH_SHORT).show());
+                    return;
+                }
 
-        TaskModel task4 = new TaskModel("Đọc sách", TaskModel.TaskType.PERSONAL, new ArrayList<>());
-        task4.getSubTasks().add(new SubTaskModel("Chương 1", "2026-12-09"));
-        task4.getSubTasks().add(new SubTaskModel("Chương 2", ""));
-        taskList.add(task4);
+                try {
+                    String res = response.body().string();
+                    JSONObject obj = new JSONObject(res);
+                    JSONArray arr = obj.getJSONArray("tasks");
+                    taskList.clear();
 
-        TaskModel task5 = new TaskModel("Đọc sách", TaskModel.TaskType.PERSONAL, new ArrayList<>());
-        task5.getSubTasks().add(new SubTaskModel("Chương 1", "2025-12-10"));
-        task5.getSubTasks().add(new SubTaskModel("Chương 2", ""));
-        taskList.add(task5);
+                    String token = sp.getString("accessToken", "");
+
+                    for (int i = 0; i < arr.length(); i++) {
+                        JSONObject t = arr.getJSONObject(i);
+                        int taskId = t.optInt("task_id", 0);
+                        String title = t.optString("task_name", "");
+                        String statusStr = t.optString("task_status", "ToDo");
+
+                        TaskModel.TaskType type;
+                        if (statusStr.equalsIgnoreCase("ToDo")) type = TaskModel.TaskType.PERSONAL;
+                        else if (statusStr.equalsIgnoreCase("Working")) type = TaskModel.TaskType.WORK_PRIVATE;
+                        else type = TaskModel.TaskType.WORK_GROUP;
+
+                        TaskModel task = new TaskModel(title, type, new ArrayList<>());
+                        if (statusStr.equalsIgnoreCase("Completed")) task.setDone(true);
+
+                        taskList.add(task);
+                        loadSubTasks(task, taskId, token);
+                    }
+
+                    runOnUiThread(() -> adapter.notifyDataSetChanged());
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Error parsing tasks", Toast.LENGTH_SHORT).show());
+                }
+            }
+        });
+    }
+
+    private void loadSubTasks(TaskModel task, int taskId, String accessToken) {
+        Request request = new Request.Builder()
+                .url(SUBTASK_URL + taskId)
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .get()
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful()) return;
+
+                try {
+                    String res = response.body().string();
+                    JSONObject obj = new JSONObject(res);
+                    JSONArray arr = obj.getJSONArray("subtasks");
+                    List<SubTaskModel> subTasks = new ArrayList<>();
+
+                    for (int i = 0; i < arr.length(); i++) {
+                        JSONObject s = arr.getJSONObject(i);
+                        int subId = s.optInt("subtask_id", 0);
+                        String subTitle = s.optString("subtask_name", "");
+                        String subDesc = s.optString("subtask_description", "");
+                        String dueDate = s.optString("due_date", "");
+                        boolean done = s.optString("subtask_status", "").equalsIgnoreCase("Completed");
+
+                        subTasks.add(new SubTaskModel(subId, subTitle, subDesc, dueDate, done));
+                    }
+
+                    task.setSubTasks(subTasks);
+
+                    runOnUiThread(() -> adapter.notifyDataSetChanged());
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     private void filterTasks(String filterType) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        Calendar c = Calendar.getInstance();
-        String todayStr = sdf.format(c.getTime());
-        c.add(Calendar.DAY_OF_MONTH, 1);
-        String tomorrowStr = sdf.format(c.getTime());
+        String todayStr = sdf.format(new Date());
 
-        if (filterType.equals("TODAY")) {
-            labelDots.setVisibility(View.VISIBLE);
-        } else {
-            labelDots.setVisibility(View.GONE);
-        }
+        if (filterType.equals("TODAY")) labelDots.setVisibility(View.VISIBLE);
+        else labelDots.setVisibility(View.GONE);
 
-        switch (filterType) {
+        List<TaskModel> filtered = new ArrayList<>();
 
-            case "TODAY": // chỉ những task có subtask today
-                List<TaskModel> todayTasks = new ArrayList<>();
-                for(TaskModel t : taskList) {
-                    if(hasSubtaskDueToday(t)) todayTasks.add(t);
-                }
-
-                // Today: Grid 2 cột, dùng TaskAdapter
-                GridLayoutManager layoutToday = new GridLayoutManager(this, 2);
-                recyclerView.setLayoutManager(layoutToday);
-                recyclerView.setAdapter(new TaskAdapter(this, todayTasks));
-                break;
-
-            case "PERSONAL":
-            case "WORK":
-                List<TaskGroup> groups = new ArrayList<>();
-
-                Comparator<String> dateKeyComparator = (a, b) -> {
-                    if (a.equals(b)) return 0;
-
-                    // Ưu tiên hiển thị "Today" và "Tomorrow" trước
-                    if (a.equals("Today")) return -1;
-                    if (b.equals("Today")) return 1;
-                    if (a.equals("Tomorrow")) return -1;
-                    if (b.equals("Tomorrow")) return 1;
-
-                    // "No due date" luôn ở cuối
-                    if (a.equals("No due date")) return 1;
-                    if (b.equals("No due date")) return -1;
-
-                    // Thử parse sang ngày, để sắp theo ngày gần nhất trước
-                    try {
-                        Date da = sdf.parse(a);
-                        Date db = sdf.parse(b);
-                        return da.compareTo(db); // ngày nhỏ hơn (gần hơn) -> đứng trước
-                    } catch (ParseException e) {
-                        // Nếu không parse được, fallback alphabet
-                        return a.compareTo(b);
+        for (TaskModel t : taskList) {
+            switch (filterType) {
+                case "TODAY":
+                    for (SubTaskModel sub : t.getSubTasks()) {
+                        if (sub.getDueDate() != null && sub.getDueDate().equals(todayStr)) {
+                            filtered.add(t);
+                            break;
+                        }
                     }
-                };
-
-                Map<String, List<TaskModel>> map = new TreeMap<>(dateKeyComparator);
-
-                for(TaskModel t : taskList) {
-                    if(filterType.equals("PERSONAL") && t.getType() != TaskModel.TaskType.PERSONAL) continue;
-                    if(filterType.equals("WORK") && t.getType() == TaskModel.TaskType.PERSONAL) continue;
-
-                    String due = getEarliestDue(t);
-                    if(due.equals(todayStr)) due = "Today";
-                    else if(due.equals(tomorrowStr)) due = "Tomorrow";
-                    else if(due.isEmpty()) due = "No due date";
-
-                    if(!map.containsKey(due)) map.put(due, new ArrayList<>());
-                    map.get(due).add(t);
-                }
-
-                for(Map.Entry<String, List<TaskModel>> e : map.entrySet()) {
-                    groups.add(new TaskGroup(e.getKey(), e.getValue()));
-                }
-
-                GridLayoutManager layout = new GridLayoutManager(this, 2);
-                TaskGroupAdapter groupAdapter = new TaskGroupAdapter(this, groups);
-                // THÊM CLICK LISTENER CHO TASK
-                groupAdapter.setOnTaskClickListener(task -> {
-                    Intent intent = new Intent(MainActivity.this, TaskDetailActivity.class);
-                    intent.putExtra("TASK", task); // task là TaskModel
-                    startActivity(intent);
-                });
-
-                groupAdapter.attachToRecyclerView(recyclerView, layout);
-                break;
-        }
-    }
-
-    private boolean hasSubtaskDueToday(TaskModel task) {
-        Calendar c = Calendar.getInstance();
-        int y = c.get(Calendar.YEAR);
-        int m = c.get(Calendar.MONTH) + 1;
-        int d = c.get(Calendar.DAY_OF_MONTH);
-
-        for(SubTaskModel sub : task.getSubTasks()) {
-            String due = sub.getDueDate();
-            if(due != null && !due.isEmpty()) {
-                String[] parts = due.split("-");
-                int yy = Integer.parseInt(parts[0]);
-                int mm = Integer.parseInt(parts[1]);
-                int dd = Integer.parseInt(parts[2]);
-                if(yy == y && mm == m && dd == d) return true;
+                    break;
+                case "PERSONAL":
+                    if (t.getType() == TaskModel.TaskType.PERSONAL) filtered.add(t);
+                    break;
+                case "WORK":
+                    if (t.getType() != TaskModel.TaskType.PERSONAL) filtered.add(t);
+                    break;
             }
         }
-        return false;
-    }
 
-    private String getEarliestDue(TaskModel t) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        Date minDate = null;
-
-        for(SubTaskModel sub : t.getSubTasks()) {
-            String due = sub.getDueDate();
-            if(due == null || due.isEmpty()) continue;
-            try {
-                Date d = sdf.parse(due);
-                if(minDate == null || d.before(minDate)) minDate = d;
-            } catch(ParseException e) { e.printStackTrace(); }
-        }
-
-        if(minDate == null) return "";
-        return sdf.format(minDate);
+        adapter.setTasks(filtered);
+        adapter.notifyDataSetChanged();
     }
 }

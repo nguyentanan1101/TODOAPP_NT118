@@ -4,38 +4,33 @@ import java.io.Serializable;
 
 public class SubTaskModel implements Serializable {
 
+    private int id;
     private String title;
+    private String description;
     private String dueDate;
     private boolean done; // trạng thái hoàn thành
 
-    public SubTaskModel(String title, String dueDate) {
+    public SubTaskModel(int id, String title, String description, String dueDate, boolean done) {
+        this.id = id;
         this.title = title;
+        this.description = description;
         this.dueDate = dueDate;
-        this.done = false; // mặc định chưa hoàn thành
+        this.done = done;
     }
 
     // Getter & Setter
-    public String getTitle() {
-        return title;
-    }
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
 
-    public String getDueDate() {
-        return dueDate;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public void setDueDate(String dueDate) {
-        this.dueDate = dueDate;
-    }
+    public String getDueDate() { return dueDate; }
+    public void setDueDate(String dueDate) { this.dueDate = dueDate; }
 
-    public boolean isDone() {
-        return done;
-    }
-
-    public void setDone(boolean done) {
-        this.done = done;
-    }
+    public boolean isDone() { return done; }
+    public void setDone(boolean done) { this.done = done; }
 }

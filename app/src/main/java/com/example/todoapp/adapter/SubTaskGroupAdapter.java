@@ -21,18 +21,29 @@ public class SubTaskGroupAdapter extends RecyclerView.Adapter<SubTaskGroupAdapte
     private Context context;
     private List<SubTaskGroup> groups;
 
+    public interface OnSubTaskCheckedChangeListener {
+        void onCheckedChanged(SubTaskModel subTask, boolean isChecked);
+    }
+
+    private OnSubTaskCheckedChangeListener listener;
+
+    public void setOnSubTaskCheckedChangeListener(OnSubTaskCheckedChangeListener listener) {
+        this.listener = listener;
+    }
+
     public SubTaskGroupAdapter(Context context, List<SubTaskGroup> groups) {
         this.context = context;
         this.groups = groups;
     }
+
+    // Lấy tất cả subtask để gửi lên server
     public List<SubTaskModel> getAllSubTasks() {
         List<SubTaskModel> all = new ArrayList<>();
-        for(SubTaskGroup group : groups) {
+        for (SubTaskGroup group : groups) {
             all.addAll(group.getSubTasks());
         }
         return all;
     }
-
 
     @Override
     public GroupViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -45,8 +56,16 @@ public class SubTaskGroupAdapter extends RecyclerView.Adapter<SubTaskGroupAdapte
         SubTaskGroup group = groups.get(position);
         holder.tvGroupTitle.setText(group.getDueLabel());
 
+        // Adapter con cho các subtask trong nhóm
+        SubTaskAdapter adapter = new SubTaskAdapter(context, group.getSubTasks());
         holder.recyclerSubTasks.setLayoutManager(new LinearLayoutManager(context));
-        holder.recyclerSubTasks.setAdapter(new SubTaskAdapter(context, group.getSubTasks()));
+        holder.recyclerSubTasks.setAdapter(adapter);
+
+        // Gắn listener để thay đổi trạng thái local khi tick checkbox
+        adapter.setOnSubTaskCheckedChangeListener((subTask, isChecked) -> {
+            subTask.setDone(isChecked); // cập nhật trạng thái local
+            if (listener != null) listener.onCheckedChanged(subTask, isChecked);
+        });
     }
 
     @Override
