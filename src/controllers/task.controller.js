@@ -1,4 +1,4 @@
-import { viewTasksByUserService, changeTaskStatusService } from "../services/taskservices.js";
+import { viewTasksByUserService, changeTaskStatusService, updateTaskStatusIfSubtasksCompletedService } from "../services/taskservices.js";
 
 export async function viewTasksByUser(req, res, next) {
     try {
@@ -23,4 +23,15 @@ export async function changeTaskStatus(req, res, next) {
         if (err && err.status) return res.status(err.status).json({ message: err.message });
         next(err);
     }  
+}
+
+export async function updateTaskStatusIfSubtasksCompleted(req, res, next) {
+     try {
+        const { task_id } = req.params;
+        const updatedTask = await updateTaskStatusIfSubtasksCompletedService(task_id);
+        return res.status(200).json({ task: updatedTask });
+    } catch (err) {
+        if (err && err.status) return res.status(err.status).json({ message: err.message });
+        next(err);
+    }
 }

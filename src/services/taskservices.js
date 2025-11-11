@@ -1,5 +1,6 @@
 import { Task } from '../models/task.model.js';
 import { User } from '../models/auth.model.js';
+import { Subtask } from '../models/subtask.model.js';
 import { Project } from '../models/project.model.js';
 import { ProjectMember } from '../models/project_member.model.js';
 
@@ -28,6 +29,26 @@ export async function changeTaskStatusService(task_id, newStatus) {
   await task.save();
   return task;
 }
+
+
+export async function updateTaskStatusIfSubtasksCompletedService(task_id) {
+  
+   const task = await Task.findByPk(task_id, {
+        include: { model: Task, as: "subtasks" }
+    });
+
+    if (!task) throw { status: 404, message: "Task không tồn tại" };
+
+    const allCompleted = task.subtasks.every(st => st.status === "Done");
+
+    if (allCompleted && task.status !== "Done") {
+        task.status = "Done";
+        await task.save();
+    }
+
+    return task;
+}
+
 
 
 

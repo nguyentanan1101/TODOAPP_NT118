@@ -6,6 +6,7 @@ import { Task } from './task.model.js';
 import { Project } from './project.model.js';
 import { ProjectMember } from './project_member.model.js';
 import { PerformanceRecord } from './performance_record.model.js';
+import { Subtask } from './subtask.model.js';
 
 export default function initAssociations() {
 
@@ -35,6 +36,20 @@ export default function initAssociations() {
   
   RefreshToken.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
   User.hasMany(RefreshToken, { foreignKey: 'user_id', as: 'refreshTokens' });
+
+   Task.hasMany(Subtask, {
+    foreignKey: 'task_id',
+    as: 'subtasks',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  });
+
+  Subtask.belongsTo(Task, {
+    foreignKey: 'task_id',
+    as: 'task',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  });
 
 
   
