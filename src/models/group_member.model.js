@@ -8,7 +8,7 @@ export const GroupMember = sequelize.define('GroupMember', {
     primaryKey: true,
     allowNull: false,
     references: {
-      model: 'group_member',
+      model: 'groups',
       key: 'group_id'
     },
     onUpdate: 'CASCADE',
@@ -19,22 +19,28 @@ export const GroupMember = sequelize.define('GroupMember', {
     primaryKey: true,
     allowNull: false,
     references: {
-      model: 'user',
+      model: 'users',
       key: 'user_id'
     },
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE'
   },
-  role: {
-    type: DataTypes.ENUM('Owner', 'Member'),
-    defaultValue: 'Member'
+  group_role_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'group_roles',
+      key: 'group_role_id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'RESTRICT'
   },
   joined_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW
   }
 }, {
-  tableName: 'group_member',
+  tableName: 'group_members',
   timestamps: false,
   indexes: [
     {
@@ -42,6 +48,9 @@ export const GroupMember = sequelize.define('GroupMember', {
     },
     {
       fields: ['user_id']
+    },
+    {
+      fields: ['group_role_id']
     }
   ]
 });

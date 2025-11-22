@@ -7,7 +7,10 @@ export const ProjectMember = sequelize.define('ProjectMember', {
     type: DataTypes.INTEGER,
     allowNull: false,
     primaryKey: true,
-    references: { model: 'project', key: 'project_id' },
+    references: {
+      model: 'projects',
+      key: 'project_id'
+    },
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE'
   },
@@ -15,23 +18,41 @@ export const ProjectMember = sequelize.define('ProjectMember', {
     type: DataTypes.INTEGER,
     allowNull: false,
     primaryKey: true,
-    references: { model: 'user', key: 'user_id' },
+    references: {
+      model: 'users',
+      key: 'user_id'
+    },
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE'
   },
-  role: {
-    type: DataTypes.ENUM('Owner', 'Member', 'Viewer'),
+  project_role_id: {
+    type: DataTypes.INTEGER,
     allowNull: false,
-    defaultValue: 'Member'
+    references: {
+      model: 'project_roles',
+      key: 'project_role_id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'RESTRICT'
   },
   joined_at: {
     type: DataTypes.DATE,
-    allowNull: false,
     defaultValue: DataTypes.NOW
   }
 }, {
-  tableName: 'project_member',
-  timestamps: false
+  tableName: 'project_members',
+  timestamps: false,
+  indexes: [
+    {
+      fields: ['project_id']
+    },
+    {
+      fields: ['user_id']
+    },
+    {
+      fields: ['project_role_id']
+    }
+  ]
 });
 
 export default ProjectMember;

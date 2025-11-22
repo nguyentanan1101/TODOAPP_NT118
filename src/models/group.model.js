@@ -1,5 +1,4 @@
 import { DataTypes } from "sequelize";
-import { GroupMember } from "./group_member.model.js";
 import sequelize from "../config/db.js";
 
 export const Group = sequelize.define("Group", {
@@ -22,9 +21,25 @@ export const Group = sequelize.define("Group", {
     defaultValue: DataTypes.NOW
   }
 }, {
-  tableName: "user_group",
+  tableName: "groups",
   timestamps: false
 });
 
+
+export const GroupRole = sequelize.define('GroupRole', {
+  group_role_id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  name: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    unique: true
+  }
+}, {
+  tableName: 'group_roles',
+  timestamps: false
+});
 
 export default Group;

@@ -50,7 +50,7 @@ reset_expires: {
   allowNull: true,
 },
 }, {
-  tableName: 'user',
+  tableName: 'users',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at'

@@ -23,6 +23,29 @@ function generateRefreshToken(user) {
   );
 }
 
+export async function refreshTokenService(token) {
+  if (!token) {
+    throw { status: 400, message: "Cần cung cấp refresh token" };
+  }
+
+  const refreshTokenDoc = await RefreshToken.findOne({
+    where: {
+      token,
+      is_revoked: false,
+      expires_at: { [Op.gt]: new Date() }
+    }
+  });
+
+  if (!refreshTokenDoc) {
+    throw { status: 401, message: "Refresh token không hợp lệ hoặc đã hết hạn" };
+  }
+
+  const user = await User.findByPk(refreshTokenDoc.user_id);
+  const newAccessToken = generateAccessToken(user);
+
+  return { accessToken: newAccessToken };
+}
+
 export async function signUpService({ email, phone_number, username, address, birthday, password }) {
   if ((!email && !phone_number) || !password) {
     throw { status: 400, message: "Cần nhập Email hoặc số điện thoại và mật khẩu" };
@@ -110,28 +133,6 @@ export async function getUserIdByEmailService(email) {
   return user.user_id;
 }
 
-export async function refreshTokenService(token) {
-  if (!token) {
-    throw { status: 400, message: "Cần cung cấp refresh token" };
-  }
-
-  const refreshTokenDoc = await RefreshToken.findOne({
-    where: {
-      token,
-      is_revoked: false,
-      expires_at: { [Op.gt]: new Date() }
-    }
-  });
-
-  if (!refreshTokenDoc) {
-    throw { status: 401, message: "Refresh token không hợp lệ hoặc đã hết hạn" };
-  }
-
-  const user = await User.findByPk(refreshTokenDoc.user_id);
-  const newAccessToken = generateAccessToken(user);
-
-  return { accessToken: newAccessToken };
-}
 
 export async function signOutService(refreshToken) {
   if (!refreshToken) {

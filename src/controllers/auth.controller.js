@@ -1,4 +1,13 @@
-import { signUpService, signInService, signOutService,getUserByIdService ,resetPasswordService, forgotPasswordService, updateUserProfileService, checkResetTokenService } from "../services/authservices.js";
+import { signUpService, 
+         signInService, 
+         signOutService,
+         getUserByIdService ,
+         resetPasswordService, 
+         forgotPasswordService, 
+         updateUserProfileService, 
+         checkResetTokenService,
+         refreshTokenService
+        } from "../services/authservices.js";
 
 export async function signUp(req, res, next) {
   try {
@@ -113,6 +122,17 @@ export async function signOut(req, res, next) {
 
     const result = await signOutService(refreshToken);
     return res.status(200).json({ message: result.message });
+  } catch (err) {
+    if (err && err.status) return res.status(err.status).json({ message: err.message });
+    next(err);
+  }
+}
+
+export async function refreshToken(req, res, next) {
+  try {
+    const { refreshToken } = req.body;
+    const result = await refreshTokenService(refreshToken);
+    res.json(result);
   } catch (err) {
     if (err && err.status) return res.status(err.status).json({ message: err.message });
     next(err);

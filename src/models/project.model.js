@@ -1,4 +1,4 @@
-import { DataTypes, Sequelize } from 'sequelize';
+import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
 
 
@@ -8,19 +8,57 @@ export const Project = sequelize.define('Project', {
     autoIncrement: true,
     primaryKey: true
   },
-  project_name: {
-    type: DataTypes.STRING(100),
+  group_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'groups',
+      key: 'group_id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE'
+  },
+  name: {
+    type: DataTypes.STRING(255),
     allowNull: false
   },
-  project_status: {
-    type: DataTypes.ENUM('Working', 'Done'),
-    allowNull: false,
-    defaultValue: 'Working'
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
   },
-  created_date: {
-    type: DataTypes.DATEONLY,
+  project_status_id: {
+    type: DataTypes.INTEGER,
     allowNull: false,
-    defaultValue: Sequelize.literal('CURRENT_DATE')
+    references: {
+      model: 'project_status',
+      key: 'project_status_id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'RESTRICT'
+  },
+  owner_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'user_id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'RESTRICT'
+  },
+  workflow_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'workflows',
+      key: 'workflow_id'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL'
+  },
+  created_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
   },
   start_date: {
     type: DataTypes.DATEONLY,
@@ -29,29 +67,59 @@ export const Project = sequelize.define('Project', {
   due_date: {
     type: DataTypes.DATEONLY,
     allowNull: true
-  },
-  owner_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'user',
-      key: 'user_id'
-    },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
-  },
-  group_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false, 
-    references: {
-      model: 'user_group',
-      key: 'group_id'
-    },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
   }
 }, {
-  tableName: 'project',
+  tableName: 'projects',
+  timestamps: false,
+  indexes: [
+    {
+      fields: ['group_id']
+    },
+    {
+      fields: ['owner_id']
+    },
+    {
+      fields: ['project_status_id']
+    },
+    {
+      fields: ['workflow_id']
+    }
+  ]
+});
+
+export const ProjectStatus = sequelize.define('ProjectStatus', {
+  project_status_id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  name: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    unique: true
+  },
+  description: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  }
+}, {
+  tableName: 'project_status',
+  timestamps: false
+});
+
+export const ProjectRole = sequelize.define('ProjectRole', {
+  project_role_id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  name: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    unique: true
+  }
+}, {
+  tableName: 'project_roles',
   timestamps: false
 });
 

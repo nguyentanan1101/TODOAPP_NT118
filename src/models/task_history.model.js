@@ -1,9 +1,8 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
 
-
-export const Subtask = sequelize.define('Subtask', {
-  subtask_id: {
+export const TaskHistory = sequelize.define('TaskHistory', {
+  history_id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true
@@ -18,39 +17,44 @@ export const Subtask = sequelize.define('Subtask', {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE'
   },
-  name: {
-    type: DataTypes.STRING(100),
-    allowNull: false
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  task_status_id: {
+  changed_by_user_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'task_status',
-      key: 'task_status_id'
+      model: 'users',
+      key: 'user_id'
     },
     onUpdate: 'CASCADE',
     onDelete: 'RESTRICT'
   },
-  created_at: {
+  field_name: {
+    type: DataTypes.STRING(50),
+    allowNull: false
+  },
+  old_value: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  new_value: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  changed_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW
   }
 }, {
-  tableName: 'subtasks',
+  tableName: 'task_history',
   timestamps: false,
   indexes: [
     {
       fields: ['task_id']
     },
     {
-      fields: ['task_status_id']
+      fields: ['changed_by_user_id']
     }
   ]
 });
 
-export default Subtask;
+export default TaskHistory;
+
