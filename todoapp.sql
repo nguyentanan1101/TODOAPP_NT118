@@ -2,33 +2,40 @@
 
 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
-
--- -----------------------------------------------------
--- Schema mydb
--- -----------------------------------------------------
--- -----------------------------------------------------
--- Schema todo
--- -----------------------------------------------------
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,
+NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 
 -- -----------------------------------------------------
 -- Schema todo
 -- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `todo` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ;
-USE `todo` ;
+
+CREATE SCHEMA IF NOT EXISTS `todo` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `todo`;
 
 -- -----------------------------------------------------
--- Table `todo`.`user_group`
+-- Table `todo`.`role`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `todo`.`user_group` (
-  `group_id` INT NOT NULL AUTO_INCREMENT,
-  `group_name` VARCHAR(100) NOT NULL,
-  `description` TEXT NULL DEFAULT NULL,
-  `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`group_id`))
+CREATE TABLE IF NOT EXISTS `todo`.`role` (
+  `role_id` INT NOT NULL AUTO_INCREMENT,
+  `role_name` VARCHAR(50) NOT NULL,
+  PRIMARY KEY (`role_id`)
+)
 ENGINE = InnoDB
-AUTO_INCREMENT = 3
-DEFAULT CHARACTER SET = utf8mb4
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
+
+-- -----------------------------------------------------
+-- Table `todo`.`status`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `todo`.`status` (
+  `status_id` INT NOT NULL AUTO_INCREMENT,
+  `status_name` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(255) NULL DEFAULT NULL,
+  PRIMARY KEY (`status_id`)
+)
+ENGINE = InnoDB
+DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
 
@@ -37,67 +44,79 @@ COLLATE = utf8mb4_unicode_ci;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `todo`.`user` (
   `user_id` INT NOT NULL AUTO_INCREMENT,
+  `full_name` VARCHAR(255) NOT NULL,
   `email` VARCHAR(100) NOT NULL,
-  `phone_number` VARCHAR(20) NULL DEFAULT NULL,
-  `username` VARCHAR(50) CHARACTER SET 'utf8mb3' NULL DEFAULT NULL,
   `password` VARCHAR(255) NOT NULL,
+  `role_id` INT NOT NULL,
   `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `reset_token` VARCHAR(100) NULL DEFAULT NULL,
-  `reset_expires` DATETIME NULL DEFAULT NULL,
-  `address` VARCHAR(100) CHARACTER SET 'utf8mb3' NULL DEFAULT NULL,
-  `birthday` DATE NULL DEFAULT NULL,
   PRIMARY KEY (`user_id`),
-  UNIQUE INDEX `email` (`email` ASC) VISIBLE,
-  UNIQUE INDEX `phone_number` (`phone_number` ASC) VISIBLE)
+  UNIQUE INDEX `email_UNIQUE` (`email` ASC),
+  INDEX `fk_user_role` (`role_id` ASC),
+  CONSTRAINT `fk_user_role`
+    FOREIGN KEY (`role_id`)
+    REFERENCES `todo`.`role` (`role_id`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE
+)
 ENGINE = InnoDB
-AUTO_INCREMENT = 4
-DEFAULT CHARACTER SET = utf8mb4
+DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
 
 -- -----------------------------------------------------
--- Table `todo`.`group_member`
+-- Table `todo`.`workspace`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `todo`.`group_member` (
-  `group_id` INT NOT NULL,
-  `user_id` INT NOT NULL,
-  `role` ENUM('Owner', 'Member') NULL DEFAULT 'Member',
-  `joined_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`group_id`, `user_id`),
-  INDEX `user_id` (`user_id` ASC) VISIBLE,
-  CONSTRAINT `group_member_ibfk_1`
-    FOREIGN KEY (`group_id`)
-    REFERENCES `todo`.`user_group` (`group_id`)
+CREATE TABLE IF NOT EXISTS `todo`.`workspace` (
+  `workspace_id` INT NOT NULL AUTO_INCREMENT,
+  `workspace_name` VARCHAR(255) NOT NULL,
+  `description` TEXT NULL DEFAULT NULL,
+  `owner_id` INT NOT NULL,
+  `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`workspace_id`),
+  INDEX `fk_workspace_owner` (`owner_id` ASC),
+  CONSTRAINT `fk_workspace_owner`
+    FOREIGN KEY (`owner_id`)
+    REFERENCES `todo`.`user` (`user_id`)
     ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `group_member_ibfk_2`
+    ON UPDATE CASCADE
+)
+ENGINE = InnoDB
+DEFAULT CHARSET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
+
+-- -----------------------------------------------------
+-- Table `todo`.`user_workspace`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `todo`.`user_workspace` (
+  `user_workspace_id` INT NOT NULL AUTO_INCREMENT,
+  `user_id` INT NOT NULL,
+  `workspace_id` INT NOT NULL,
+  `role_id` INT NOT NULL,
+  `joined_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_workspace_id`),
+  INDEX `fk_userworkspace_user` (`user_id` ASC),
+  INDEX `fk_userworkspace_workspace` (`workspace_id` ASC),
+  INDEX `fk_userworkspace_role` (`role_id` ASC),
+  CONSTRAINT `fk_userworkspace_user`
     FOREIGN KEY (`user_id`)
     REFERENCES `todo`.`user` (`user_id`)
     ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_unicode_ci;
-
-
--- -----------------------------------------------------
--- Table `todo`.`workflow`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `todo`.`workflow` (
-  `workflow_id` INT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(100) NOT NULL,
-  `description` TEXT NULL DEFAULT NULL,
-  `project_id` INT NULL DEFAULT NULL,
-  PRIMARY KEY (`workflow_id`),
-  INDEX `project_id` (`project_id` ASC) VISIBLE,
-  CONSTRAINT `workflow_ibfk_1`
-    FOREIGN KEY (`project_id`)
-    REFERENCES `todo`.`project` (`project_id`)
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_userworkspace_workspace`
+    FOREIGN KEY (`workspace_id`)
+    REFERENCES `todo`.`workspace` (`workspace_id`)
     ON DELETE CASCADE
-    ON UPDATE CASCADE)
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_userworkspace_role`
+    FOREIGN KEY (`role_id`)
+    REFERENCES `todo`.`role` (`role_id`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE
+)
 ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4
+DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
 
@@ -106,79 +125,26 @@ COLLATE = utf8mb4_unicode_ci;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `todo`.`project` (
   `project_id` INT NOT NULL AUTO_INCREMENT,
+  `workspace_id` INT NOT NULL,
   `project_name` VARCHAR(100) NOT NULL,
-  `project_status` ENUM('Working', 'Done') NULL DEFAULT 'Working',
-  `created_date` DATE NOT NULL,
-  `start_date` DATE NULL DEFAULT NULL,
-  `due_date` DATE NULL DEFAULT NULL,
-  `owner_id` INT NOT NULL,
-  `workflow_id` INT NULL DEFAULT NULL,
-  `group_id` INT NULL DEFAULT NULL,
+  `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_by` INT NOT NULL,
   PRIMARY KEY (`project_id`),
-  INDEX `owner_id` (`owner_id` ASC) VISIBLE,
-  INDEX `workflow_id` (`workflow_id` ASC) VISIBLE,
-  INDEX `project_ibfk_3` (`group_id` ASC) VISIBLE,
-  CONSTRAINT `project_ibfk_1`
-    FOREIGN KEY (`owner_id`)
+  INDEX `fk_project_workspace` (`workspace_id` ASC),
+  INDEX `fk_project_createdby` (`created_by` ASC),
+  CONSTRAINT `fk_project_workspace`
+    FOREIGN KEY (`workspace_id`)
+    REFERENCES `todo`.`workspace` (`workspace_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_project_createdby`
+    FOREIGN KEY (`created_by`)
     REFERENCES `todo`.`user` (`user_id`)
     ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `project_ibfk_2`
-    FOREIGN KEY (`workflow_id`)
-    REFERENCES `todo`.`workflow` (`workflow_id`)
-    ON DELETE SET NULL
-    ON UPDATE CASCADE,
-  CONSTRAINT `project_ibfk_3`
-    FOREIGN KEY (`group_id`)
-    REFERENCES `todo`.`user_group` (`group_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
+    ON UPDATE CASCADE
+)
 ENGINE = InnoDB
-AUTO_INCREMENT = 2
-DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_unicode_ci;
-
-
--- -----------------------------------------------------
--- Table `todo`.`milestone`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `todo`.`milestone` (
-  `milestone_id` INT NOT NULL AUTO_INCREMENT,
-  `project_id` INT NOT NULL,
-  `name` VARCHAR(100) NOT NULL,
-  `description` TEXT NULL DEFAULT NULL,
-  `start_date` DATE NULL DEFAULT NULL,
-  `due_date` DATE NULL DEFAULT NULL,
-  `status` ENUM('Planned', 'In Progress', 'Completed') NULL DEFAULT 'Planned',
-  PRIMARY KEY (`milestone_id`),
-  INDEX `project_id` (`project_id` ASC) VISIBLE,
-  CONSTRAINT `milestone_ibfk_1`
-    FOREIGN KEY (`project_id`)
-    REFERENCES `todo`.`project` (`project_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_unicode_ci;
-
-
--- -----------------------------------------------------
--- Table `todo`.`workflow_step`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `todo`.`workflow_step` (
-  `step_id` INT NOT NULL AUTO_INCREMENT,
-  `workflow_id` INT NOT NULL,
-  `step_name` VARCHAR(100) NOT NULL,
-  `step_order` INT NOT NULL,
-  PRIMARY KEY (`step_id`),
-  INDEX `workflow_id` (`workflow_id` ASC) VISIBLE,
-  CONSTRAINT `workflow_step_ibfk_1`
-    FOREIGN KEY (`workflow_id`)
-    REFERENCES `todo`.`workflow` (`workflow_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4
+DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
 
@@ -187,184 +153,85 @@ COLLATE = utf8mb4_unicode_ci;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `todo`.`task` (
   `task_id` INT NOT NULL AUTO_INCREMENT,
-  `task_name` VARCHAR(100) NOT NULL,
-  `task_description` TEXT NULL DEFAULT NULL,
-  `task_status` ENUM('ToDo', 'Working', 'Done') NULL DEFAULT 'ToDo',
-  `task_progress` INT NULL DEFAULT '0',
-  `created_date` DATE NOT NULL,
-  `start_date` DATE NULL DEFAULT NULL,
-  `due_date` DATE NULL DEFAULT NULL,
   `project_id` INT NOT NULL,
-  `workflow_id` INT NULL DEFAULT NULL,
-  `step_id` INT NULL DEFAULT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `description` TEXT NULL DEFAULT NULL,
+  `status_id` INT NOT NULL,
   `created_by` INT NOT NULL,
   `assigned_to` INT NULL DEFAULT NULL,
+  `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`task_id`),
-  UNIQUE INDEX `unique_task_per_project` (`task_name` ASC, `project_id` ASC) VISIBLE,
-  INDEX `project_id` (`project_id` ASC) VISIBLE,
-  INDEX `workflow_id` (`workflow_id` ASC) VISIBLE,
-  INDEX `step_id` (`step_id` ASC) VISIBLE,
-  INDEX `fk_task_created_by` (`created_by` ASC) VISIBLE,
-  INDEX `fk_task_assigned_to` (`assigned_to` ASC) VISIBLE,
-  CONSTRAINT `fk_task_assigned_to`
+  INDEX `fk_task_project` (`project_id` ASC),
+  INDEX `fk_task_status` (`status_id` ASC),
+  INDEX `fk_task_createdby` (`created_by` ASC),
+  INDEX `fk_task_assignedto` (`assigned_to` ASC),
+  CONSTRAINT `fk_task_project`
+    FOREIGN KEY (`project_id`)
+    REFERENCES `todo`.`project` (`project_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_task_status`
+    FOREIGN KEY (`status_id`)
+    REFERENCES `todo`.`status` (`status_id`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_task_createdby`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `todo`.`user` (`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_task_assignedto`
     FOREIGN KEY (`assigned_to`)
     REFERENCES `todo`.`user` (`user_id`)
     ON DELETE SET NULL
-    ON UPDATE CASCADE,
-  CONSTRAINT `fk_task_created_by`
-    FOREIGN KEY (`created_by`)
-    REFERENCES `todo`.`user` (`user_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `task_ibfk_1`
-    FOREIGN KEY (`project_id`)
-    REFERENCES `todo`.`project` (`project_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `task_ibfk_2`
-    FOREIGN KEY (`workflow_id`)
-    REFERENCES `todo`.`workflow` (`workflow_id`)
-    ON DELETE SET NULL
-    ON UPDATE CASCADE,
-  CONSTRAINT `task_ibfk_3`
-    FOREIGN KEY (`step_id`)
-    REFERENCES `todo`.`workflow_step` (`step_id`)
-    ON DELETE SET NULL
-    ON UPDATE CASCADE)
+    ON UPDATE CASCADE
+)
 ENGINE = InnoDB
-AUTO_INCREMENT = 2
-DEFAULT CHARACTER SET = utf8mb4
+DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
 
 -- -----------------------------------------------------
--- Table `todo`.`milestone_task`
+-- Table `todo`.`comment`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `todo`.`milestone_task` (
-  `milestone_id` INT NOT NULL,
+CREATE TABLE IF NOT EXISTS `todo`.`comment` (
+  `comment_id` INT NOT NULL AUTO_INCREMENT,
   `task_id` INT NOT NULL,
-  PRIMARY KEY (`milestone_id`, `task_id`),
-  INDEX `task_id` (`task_id` ASC) VISIBLE,
-  CONSTRAINT `milestone_task_ibfk_1`
-    FOREIGN KEY (`milestone_id`)
-    REFERENCES `todo`.`milestone` (`milestone_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `milestone_task_ibfk_2`
+  `user_id` INT NOT NULL,
+  `content` TEXT NOT NULL,
+  `created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`comment_id`),
+  INDEX `fk_comment_task` (`task_id` ASC),
+  INDEX `fk_comment_user` (`user_id` ASC),
+  CONSTRAINT `fk_comment_task`
     FOREIGN KEY (`task_id`)
     REFERENCES `todo`.`task` (`task_id`)
     ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_unicode_ci;
-
-
--- -----------------------------------------------------
--- Table `todo`.`performance_record`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `todo`.`performance_record` (
-  `performance_id` INT NOT NULL AUTO_INCREMENT,
-  `group_id` INT NOT NULL,
-  `user_id` INT NOT NULL,
-  `score` DECIMAL(5,2) NOT NULL,
-  `comment` TEXT NULL DEFAULT NULL,
-  `created_by` INT NOT NULL,
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`performance_id`),
-  INDEX `idx_group_id` (`group_id` ASC) VISIBLE,
-  INDEX `idx_user_id` (`user_id` ASC) VISIBLE,
-  INDEX `idx_created_by` (`created_by` ASC) VISIBLE,
-  CONSTRAINT `fk_performance_created_by`
-    FOREIGN KEY (`created_by`)
-    REFERENCES `todo`.`user` (`user_id`)
-    ON DELETE CASCADE
     ON UPDATE CASCADE,
-  CONSTRAINT `fk_performance_group`
-    FOREIGN KEY (`group_id`)
-    REFERENCES `todo`.`user_group` (`group_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `fk_performance_user`
+  CONSTRAINT `fk_comment_user`
     FOREIGN KEY (`user_id`)
     REFERENCES `todo`.`user` (`user_id`)
     ON DELETE CASCADE
-    ON UPDATE CASCADE)
+    ON UPDATE CASCADE
+)
 ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4
+DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 
 
 -- -----------------------------------------------------
--- Table `todo`.`project_member`
+-- DEFAULT DATA
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `todo`.`project_member` (
-  `project_id` INT NOT NULL,
-  `user_id` INT NOT NULL,
-  `role` ENUM('Owner', 'Member', 'Viewer') NULL DEFAULT 'Member',
-  `joined_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`project_id`, `user_id`),
-  INDEX `user_id` (`user_id` ASC) VISIBLE,
-  CONSTRAINT `project_member_ibfk_1`
-    FOREIGN KEY (`project_id`)
-    REFERENCES `todo`.`project` (`project_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `project_member_ibfk_2`
-    FOREIGN KEY (`user_id`)
-    REFERENCES `todo`.`user` (`user_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_unicode_ci;
+INSERT INTO `todo`.`role` (`role_name`) VALUES
+('Admin'), ('Manager'), ('Member'), ('Viewer');
 
-
--- -----------------------------------------------------
--- Table `todo`.`refresh_token`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `todo`.`refresh_token` (
-  `refresh_token_id` INT NOT NULL AUTO_INCREMENT,
-  `token` VARCHAR(512) NOT NULL,
-  `user_id` INT NOT NULL,
-  `expires_at` DATETIME NOT NULL,
-  `is_revoked` TINYINT(1) NOT NULL DEFAULT '0',
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`refresh_token_id`),
-  UNIQUE INDEX `token` (`token` ASC) VISIBLE,
-  INDEX `idx_user_id` (`user_id` ASC) VISIBLE,
-  CONSTRAINT `fk_refresh_user`
-    FOREIGN KEY (`user_id`)
-    REFERENCES `todo`.`user` (`user_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-AUTO_INCREMENT = 2
-DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_unicode_ci;
-
-
--- -----------------------------------------------------
--- Table `todo`.`subtask`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `todo`.`subtask` (
-  `subtask_id` INT NOT NULL AUTO_INCREMENT,
-  `subtask_name` VARCHAR(100) NOT NULL,
-  `subtask_description` TEXT NULL DEFAULT NULL,
-  `subtask_status` ENUM('Working', 'Done') NULL DEFAULT 'Working',
-  `created_date` DATE NOT NULL,
-  `task_id` INT NOT NULL,
-  PRIMARY KEY (`subtask_id`),
-  INDEX `task_id` (`task_id` ASC) VISIBLE,
-  CONSTRAINT `subtask_ibfk_1`
-    FOREIGN KEY (`task_id`)
-    REFERENCES `todo`.`task` (`task_id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_unicode_ci;
+INSERT INTO `todo`.`status` (`status_name`, `description`) VALUES
+('To Do', 'Task chưa thực hiện'),
+('In Progress', 'Đang tiến hành'),
+('Review', 'Đang kiểm tra'),
+('Done', 'Hoàn thành'),
+('Archived', 'Lưu trữ');
 
 
 SET SQL_MODE=@OLD_SQL_MODE;
