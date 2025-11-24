@@ -7,50 +7,6 @@ CREATE SCHEMA IF NOT EXISTS `todo`
   COLLATE utf8mb4_unicode_ci;
 
 USE `todo`;
-
--- -----------------------------------------------------
--- Roles & Status Tables
--- -----------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS `roles` (
-  `role_id` INT NOT NULL AUTO_INCREMENT,
-  `role_name` VARCHAR(50) NOT NULL UNIQUE,
-  `description` VARCHAR(255) DEFAULT NULL,
-  PRIMARY KEY (`role_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `workspace_roles` (
-  `workspace_role_id` INT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(50) NOT NULL UNIQUE,
-  PRIMARY KEY (`workspace_role_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `group_roles` (
-  `group_role_id` INT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(50) NOT NULL UNIQUE,
-  PRIMARY KEY (`group_role_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `project_roles` (
-  `project_role_id` INT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(50) NOT NULL UNIQUE,
-  PRIMARY KEY (`project_role_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `task_status` (
-  `task_status_id` INT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(100) NOT NULL UNIQUE,
-  `description` VARCHAR(255) DEFAULT NULL,
-  PRIMARY KEY (`task_status_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `project_status` (
-  `project_status_id` INT NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(100) NOT NULL UNIQUE,
-  `description` VARCHAR(255) DEFAULT NULL,
-  PRIMARY KEY (`project_status_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- -----------------------------------------------------
 -- Users
 -- -----------------------------------------------------
@@ -59,11 +15,11 @@ CREATE TABLE IF NOT EXISTS `users` (
   `user_id` INT NOT NULL AUTO_INCREMENT,
   `email` VARCHAR(100) NOT NULL UNIQUE,
   `username` VARCHAR(50),
-  `full_name` VARCHAR(255),
   `password` VARCHAR(255) NOT NULL,
   `phone_number` VARCHAR(20) UNIQUE,
   `address` VARCHAR(100),
   `birthday` DATE,
+  `role` ENUM('Admin', 'User') NOT NULL DEFAULT 'User',   -- 👉 THÊM NGAY Ở ĐÂY
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `reset_token` VARCHAR(10),
@@ -96,11 +52,10 @@ CREATE TABLE IF NOT EXISTS `workspaces` (
 CREATE TABLE IF NOT EXISTS `workspace_members` (
   `workspace_id` INT NOT NULL,
   `user_id` INT NOT NULL,
-  `workspace_role_id` INT NOT NULL,
+  `role` ENUM('Owner', 'Admin', 'Member', 'Viewer') NOT NULL DEFAULT 'Member',
   `joined_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`workspace_id`, `user_id`),
   INDEX `idx_wm_user` (`user_id`),
-  INDEX `idx_wm_role` (`workspace_role_id`),
   CONSTRAINT `fk_wm_workspace`
     FOREIGN KEY (`workspace_id`)
     REFERENCES `workspaces` (`workspace_id`)
@@ -108,11 +63,7 @@ CREATE TABLE IF NOT EXISTS `workspace_members` (
   CONSTRAINT `fk_wm_user`
     FOREIGN KEY (`user_id`)
     REFERENCES `users` (`user_id`)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_wm_role`
-    FOREIGN KEY (`workspace_role_id`)
-    REFERENCES `workspace_roles` (`workspace_role_id`)
-    ON DELETE RESTRICT ON UPDATE CASCADE
+    ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------
@@ -140,11 +91,10 @@ CREATE TABLE IF NOT EXISTS `groups` (
 CREATE TABLE IF NOT EXISTS `group_members` (
   `group_id` INT NOT NULL,
   `user_id` INT NOT NULL,
-  `group_role_id` INT NOT NULL,
+  `role` ENUM('Owner', 'Manager', 'Member', 'Viewer') NOT NULL DEFAULT 'Member',
   `joined_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`group_id`, `user_id`),
   INDEX `idx_gm_user` (`user_id`),
-  INDEX `idx_gm_role` (`group_role_id`),
   CONSTRAINT `fk_gm_group`
     FOREIGN KEY (`group_id`)
     REFERENCES `groups` (`group_id`)
@@ -152,11 +102,7 @@ CREATE TABLE IF NOT EXISTS `group_members` (
   CONSTRAINT `fk_gm_user`
     FOREIGN KEY (`user_id`)
     REFERENCES `users` (`user_id`)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_gm_role`
-    FOREIGN KEY (`group_role_id`)
-    REFERENCES `group_roles` (`group_role_id`)
-    ON DELETE RESTRICT ON UPDATE CASCADE
+    ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------
@@ -198,7 +144,7 @@ CREATE TABLE IF NOT EXISTS `projects` (
   `group_id` INT NOT NULL,
   `name` VARCHAR(255) NOT NULL,
   `description` TEXT,
-  `project_status_id` INT NOT NULL,
+  `status` ENUM('Active', 'On Hold', 'Completed', 'Archived') NOT NULL DEFAULT 'Active',
   `owner_id` INT NOT NULL,
   `workflow_id` INT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -207,7 +153,6 @@ CREATE TABLE IF NOT EXISTS `projects` (
   PRIMARY KEY (`project_id`),
   INDEX `idx_proj_group` (`group_id`),
   INDEX `idx_proj_owner` (`owner_id`),
-  INDEX `idx_proj_status` (`project_status_id`),
   INDEX `idx_proj_workflow` (`workflow_id`),
   CONSTRAINT `fk_proj_group`
     FOREIGN KEY (`group_id`)
@@ -216,10 +161,6 @@ CREATE TABLE IF NOT EXISTS `projects` (
   CONSTRAINT `fk_proj_owner`
     FOREIGN KEY (`owner_id`)
     REFERENCES `users` (`user_id`)
-    ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT `fk_proj_status`
-    FOREIGN KEY (`project_status_id`)
-    REFERENCES `project_status` (`project_status_id`)
     ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_proj_workflow`
     FOREIGN KEY (`workflow_id`)
@@ -234,11 +175,10 @@ CREATE TABLE IF NOT EXISTS `projects` (
 CREATE TABLE IF NOT EXISTS `project_members` (
   `project_id` INT NOT NULL,
   `user_id` INT NOT NULL,
-  `project_role_id` INT NOT NULL,
+  `role` ENUM('Owner', 'Manager', 'Contributor', 'Viewer') NOT NULL DEFAULT 'Contributor',
   `joined_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`project_id`, `user_id`),
   INDEX `idx_pm_user` (`user_id`),
-  INDEX `idx_pm_role` (`project_role_id`),
   CONSTRAINT `fk_pm_project`
     FOREIGN KEY (`project_id`)
     REFERENCES `projects` (`project_id`)
@@ -246,11 +186,7 @@ CREATE TABLE IF NOT EXISTS `project_members` (
   CONSTRAINT `fk_pm_user`
     FOREIGN KEY (`user_id`)
     REFERENCES `users` (`user_id`)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_pm_role`
-    FOREIGN KEY (`project_role_id`)
-    REFERENCES `project_roles` (`project_role_id`)
-    ON DELETE RESTRICT ON UPDATE CASCADE
+    ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------
@@ -283,7 +219,7 @@ CREATE TABLE IF NOT EXISTS `tasks` (
   `milestone_id` INT NULL,
   `title` VARCHAR(255) NOT NULL,
   `description` TEXT,
-  `task_status_id` INT NOT NULL,
+  `status` ENUM('To Do', 'In Progress', 'Review', 'Done', 'Blocked') NOT NULL DEFAULT 'To Do',
   `task_progress` DECIMAL(5,2) DEFAULT 0.00,
   `created_by` INT NOT NULL,
   `assigned_to` INT NULL,
@@ -295,7 +231,6 @@ CREATE TABLE IF NOT EXISTS `tasks` (
   PRIMARY KEY (`task_id`),
   INDEX `idx_task_project` (`project_id`),
   INDEX `idx_task_milestone` (`milestone_id`),
-  INDEX `idx_task_status` (`task_status_id`),
   INDEX `idx_task_created_by` (`created_by`),
   INDEX `idx_task_assigned_to` (`assigned_to`),
   INDEX `idx_task_step` (`step_id`),
@@ -307,10 +242,6 @@ CREATE TABLE IF NOT EXISTS `tasks` (
     FOREIGN KEY (`milestone_id`)
     REFERENCES `milestones` (`milestone_id`)
     ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `fk_task_status`
-    FOREIGN KEY (`task_status_id`)
-    REFERENCES `task_status` (`task_status_id`)
-    ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `fk_task_created_by`
     FOREIGN KEY (`created_by`)
     REFERENCES `users` (`user_id`)
@@ -334,19 +265,14 @@ CREATE TABLE IF NOT EXISTS `subtasks` (
   `task_id` INT NOT NULL,
   `name` VARCHAR(100) NOT NULL,
   `description` TEXT,
-  `task_status_id` INT NOT NULL,
+  `status` ENUM('To Do', 'In Progress', 'Review', 'Done', 'Blocked') NOT NULL DEFAULT 'To Do',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`subtask_id`),
   INDEX `idx_subtask_task` (`task_id`),
-  INDEX `idx_subtask_status` (`task_status_id`),
   CONSTRAINT `fk_subtask_task`
     FOREIGN KEY (`task_id`)
     REFERENCES `tasks` (`task_id`)
     ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_subtask_status`
-    FOREIGN KEY (`task_status_id`)
-    REFERENCES `task_status` (`task_status_id`)
-    ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------
@@ -470,36 +396,28 @@ CREATE TABLE IF NOT EXISTS `refresh_token` (
     ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- -----------------------------------------------------
--- Default Data
--- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `workspace_invitations` (
+  `invitation_id` INT NOT NULL AUTO_INCREMENT,
+  `workspace_id` INT NOT NULL,
+  `email` VARCHAR(100) NOT NULL,
+  `role` ENUM('Admin', 'Member', 'Viewer') NOT NULL DEFAULT 'Member',
+  `invited_by` INT NOT NULL,
+  `token` VARCHAR(255) NOT NULL UNIQUE,
+  `status` ENUM('pending', 'accepted', 'expired') DEFAULT 'pending',
+  `expires_at` DATETIME NOT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`invitation_id`),
+  INDEX `idx_workspace_invite` (`workspace_id`),
+  CONSTRAINT `fk_invite_workspace`
+      FOREIGN KEY (`workspace_id`)
+      REFERENCES `workspaces` (`workspace_id`)
+      ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_invite_user`
+      FOREIGN KEY (`invited_by`)
+      REFERENCES `users` (`user_id`)
+      ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO `workspace_roles` (`name`) VALUES
-('Owner'), ('Admin'), ('Member'), ('Viewer')
-ON DUPLICATE KEY UPDATE name = VALUES(name);
-
-INSERT INTO `group_roles` (`name`) VALUES
-('Owner'), ('Manager'), ('Member'), ('Viewer')
-ON DUPLICATE KEY UPDATE name = VALUES(name);
-
-INSERT INTO `project_roles` (`name`) VALUES
-('Owner'), ('Manager'), ('Contributor'), ('Viewer')
-ON DUPLICATE KEY UPDATE name = VALUES(name);
-
-INSERT INTO `task_status` (`name`, `description`) VALUES
-('To Do', 'Not started'),
-('In Progress', 'In progress'),
-('Review', 'In review'),
-('Done', 'Completed'),
-('Blocked', 'Blocked')
-ON DUPLICATE KEY UPDATE name = VALUES(name);
-
-INSERT INTO `project_status` (`name`, `description`) VALUES
-('Active', 'Active'),
-('On Hold', 'On hold'),
-('Completed', 'Completed'),
-('Archived', 'Archived')
-ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;

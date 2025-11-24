@@ -7,7 +7,11 @@ export const Group = sequelize.define("Group", {
     autoIncrement: true,
     primaryKey: true
   },
-  group_name: {
+  workspace_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  name: {                               
     type: DataTypes.STRING(100),
     allowNull: false
   },
@@ -17,29 +21,9 @@ export const Group = sequelize.define("Group", {
   },
   created_at: {
     type: DataTypes.DATE,
-    allowNull: false,
     defaultValue: DataTypes.NOW
   }
 }, {
   tableName: "groups",
   timestamps: false
 });
-
-
-export const GroupRole = sequelize.define('GroupRole', {
-  group_role_id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
-  name: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    unique: true
-  }
-}, {
-  tableName: 'group_roles',
-  timestamps: false
-});
-
-export default Group;

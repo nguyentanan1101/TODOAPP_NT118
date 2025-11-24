@@ -1,18 +1,18 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
 
-export const Subtask = sequelize.define('Subtask', {
-  subtask_id: {
+export const Workflow = sequelize.define('Workflow', {
+  workflow_id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true
   },
-  task_id: {
+  group_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'tasks',
-      key: 'task_id'
+      model: 'groups',
+      key: 'group_id'
     },
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE'
@@ -24,20 +24,11 @@ export const Subtask = sequelize.define('Subtask', {
   description: {
     type: DataTypes.TEXT,
     allowNull: true
-  },
-  status: {
-    type: DataTypes.ENUM('To Do', 'In Progress', 'Review', 'Done', 'Blocked'),
-    allowNull: false,
-    defaultValue: 'To Do'
-  },
-  created_at: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
   }
 }, {
-  tableName: 'subtasks',
+  tableName: 'workflows',
   timestamps: false,
   indexes: [
-    { fields: ['task_id'] }
+    { fields: ['group_id'] }
   ]
 });

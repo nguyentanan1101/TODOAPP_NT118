@@ -1,8 +1,8 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
 
-export const TaskHistory = sequelize.define('TaskHistory', {
-  history_id: {
+export const Comment = sequelize.define('Comment', {
+  comment_id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true
@@ -17,7 +17,7 @@ export const TaskHistory = sequelize.define('TaskHistory', {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE'
   },
-  changed_by_user_id: {
+  user_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
@@ -27,33 +27,25 @@ export const TaskHistory = sequelize.define('TaskHistory', {
     onUpdate: 'CASCADE',
     onDelete: 'RESTRICT'
   },
-  field_name: {
-    type: DataTypes.STRING(50),
+  content: {
+    type: DataTypes.TEXT,
     allowNull: false
   },
-  old_value: {
-    type: DataTypes.TEXT,
-    allowNull: true
+  created_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
   },
-  new_value: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  changed_at: {
+  updated_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW
   }
 }, {
-  tableName: 'task_history',
-  timestamps: false,
+  tableName: 'comment',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [
-    {
-      fields: ['task_id']
-    },
-    {
-      fields: ['changed_by_user_id']
-    }
+    { fields: ['task_id'] },
+    { fields: ['user_id'] }
   ]
 });
-
-

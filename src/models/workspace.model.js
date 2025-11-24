@@ -33,10 +33,6 @@ export const Workspace = sequelize.define('Workspace', {
   tableName: 'workspaces',
   timestamps: false,
   indexes: [
-    {
-      fields: ['owner_id']
-    }
+    { fields: ['owner_id'] }
   ]
 });
-
-export default Workspace;

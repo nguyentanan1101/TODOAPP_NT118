@@ -5,6 +5,7 @@ import GroupRouter from './group.routes.js';
 import ProjectRouter from './project.routes.js';
 import PerformanceRouter from './performance.routes.js';
 import SubTaskRouter from './subtask.route.js';
+import WorkspaceRouter from './workspace.routes.js';
 
 const router = Router();
 
@@ -24,6 +25,9 @@ router.use('/performance', PerformanceRouter);
 
 
 router.use('/subtask', SubTaskRouter);
+
+
+router.use('/workspace', WorkspaceRouter);
 
 
 export default router;

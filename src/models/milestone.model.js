@@ -1,18 +1,18 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
 
-export const Subtask = sequelize.define('Subtask', {
-  subtask_id: {
+export const Milestone = sequelize.define('Milestone', {
+  milestone_id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true
   },
-  task_id: {
+  project_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'tasks',
-      key: 'task_id'
+      model: 'projects',
+      key: 'project_id'
     },
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE'
@@ -25,19 +25,22 @@ export const Subtask = sequelize.define('Subtask', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  status: {
-    type: DataTypes.ENUM('To Do', 'In Progress', 'Review', 'Done', 'Blocked'),
-    allowNull: false,
-    defaultValue: 'To Do'
+  due_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
   },
-  created_at: {
+  is_completed: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  completed_at: {
     type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
+    allowNull: true
   }
 }, {
-  tableName: 'subtasks',
+  tableName: 'milestones',
   timestamps: false,
   indexes: [
-    { fields: ['task_id'] }
+    { fields: ['project_id'] }
   ]
 });

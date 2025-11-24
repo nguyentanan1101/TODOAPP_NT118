@@ -35,15 +35,10 @@ export const Task = sequelize.define('Task', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  task_status_id: {
-    type: DataTypes.INTEGER,
+  status: {
+    type: DataTypes.ENUM('To Do', 'In Progress', 'Review', 'Done', 'Blocked'),
     allowNull: false,
-    references: {
-      model: 'task_status',
-      key: 'task_status_id'
-    },
-    onUpdate: 'CASCADE',
-    onDelete: 'RESTRICT'
+    defaultValue: 'To Do'
   },
   task_progress: {
     type: DataTypes.DECIMAL(5, 2),
@@ -102,48 +97,10 @@ export const Task = sequelize.define('Task', {
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   indexes: [
-    {
-      fields: ['project_id']
-    },
-    {
-      fields: ['milestone_id']
-    },
-    {
-      fields: ['task_status_id']
-    },
-    {
-      fields: ['created_by']
-    },
-    {
-      fields: ['assigned_to']
-    },
-    {
-      fields: ['step_id']
-    }
+    { fields: ['project_id'] },
+    { fields: ['milestone_id'] },
+    { fields: ['created_by'] },
+    { fields: ['assigned_to'] },
+    { fields: ['step_id'] }
   ]
 });
-
-export const TaskStatus = sequelize.define('TaskStatus', {
-  task_status_id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
-  name: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-    unique: true
-  },
-  description: {
-    type: DataTypes.STRING(255),
-    allowNull: true
-  }
-}, {
-  tableName: 'task_status',
-  timestamps: false
-});
-
-export default Task;
-
-
-

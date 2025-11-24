@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
 
-
 export const Project = sequelize.define('Project', {
   project_id: {
     type: DataTypes.INTEGER,
@@ -26,15 +25,10 @@ export const Project = sequelize.define('Project', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  project_status_id: {
-    type: DataTypes.INTEGER,
+  status: {
+    type: DataTypes.ENUM('Active', 'On Hold', 'Completed', 'Archived'),
     allowNull: false,
-    references: {
-      model: 'project_status',
-      key: 'project_status_id'
-    },
-    onUpdate: 'CASCADE',
-    onDelete: 'RESTRICT'
+    defaultValue: 'Active'
   },
   owner_id: {
     type: DataTypes.INTEGER,
@@ -72,55 +66,8 @@ export const Project = sequelize.define('Project', {
   tableName: 'projects',
   timestamps: false,
   indexes: [
-    {
-      fields: ['group_id']
-    },
-    {
-      fields: ['owner_id']
-    },
-    {
-      fields: ['project_status_id']
-    },
-    {
-      fields: ['workflow_id']
-    }
+    { fields: ['group_id'] },
+    { fields: ['owner_id'] },
+    { fields: ['workflow_id'] }
   ]
 });
-
-export const ProjectStatus = sequelize.define('ProjectStatus', {
-  project_status_id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
-  name: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-    unique: true
-  },
-  description: {
-    type: DataTypes.STRING(255),
-    allowNull: true
-  }
-}, {
-  tableName: 'project_status',
-  timestamps: false
-});
-
-export const ProjectRole = sequelize.define('ProjectRole', {
-  project_role_id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
-  name: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    unique: true
-  }
-}, {
-  tableName: 'project_roles',
-  timestamps: false
-});
-
-export default Project;

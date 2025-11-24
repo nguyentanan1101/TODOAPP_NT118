@@ -13,13 +13,16 @@ export async function signUp(req, res, next) {
   try {
     const newUser = await signUpService(req.body);
     return res.status(201).json({
-      user_id: newUser.user_id,
-      email: newUser.email,
-      phone_number: newUser.phone_number,
-      username: newUser.username,
-      address: newUser.address,
-      birthday: newUser.birthday,
-      message: "Đăng ký thành công"
+      message: "Đăng ký thành công",
+      user: {
+        user_id: newUser.user_id,
+        email: newUser.email,
+        phone_number: newUser.phone_number,
+        username: newUser.username,
+        address: newUser.address,
+        birthday: newUser.birthday,
+        role: newUser.role
+      }
     });
   } catch (err) {
     if (err && err.status) return res.status(err.status).json({ message: err.message });
@@ -29,12 +32,12 @@ export async function signUp(req, res, next) {
 
 export async function signIn(req, res, next) {
   try {
-    const { user, accessToken, refreshToken } = await signInService(req.body);
+    const { user, role ,accessToken, refreshToken } = await signInService(req.body);
     return res.status(200).json({
       message: "Đăng nhập thành công",
       accessToken,
       refreshToken,
-      user: { user_id: user.user_id, email: user.email, phone_number: user.phone_number, username: user.username, address: user.address, birthday: user.birthday }
+      user: { user_id: user.user_id, email: user.email, phone_number: user.phone_number, username: user.username, address: user.address, birthday: user.birthday, role: user.role },
     });
   } catch (err) {
     if (err && err.status) return res.status(err.status).json({ message: err.message });

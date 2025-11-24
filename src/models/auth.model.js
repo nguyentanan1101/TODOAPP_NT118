@@ -29,6 +29,10 @@ export const User = sequelize.define('User', {
     type: DataTypes.DATE,
     allowNull: true
   },
+  role: {
+    type: DataTypes.ENUM('Admin', 'User'),
+    allowNull: false
+  },
   password: {
     type: DataTypes.STRING(255),
     allowNull: false
