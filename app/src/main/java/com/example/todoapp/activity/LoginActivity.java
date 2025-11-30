@@ -1,16 +1,20 @@
 package com.example.todoapp.activity;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.MotionEvent; // Import thêm cái này để bắt sự kiện chạm
+import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.todoapp.R;
@@ -30,6 +34,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -47,6 +52,9 @@ public class LoginActivity extends AppCompatActivity {
     private ImageView googleBtn, facebookBtn;
     private CheckBox chkRememberMe;
 
+    // Biến theo dõi trạng thái ẩn/hiện mật khẩu
+    private boolean isPasswordVisible = false;
+
     private GoogleSignInOptions gso;
     private GoogleSignInClient gsc;
     private CallbackManager callbackManager;
@@ -54,6 +62,7 @@ public class LoginActivity extends AppCompatActivity {
     private OkHttpClient client = new OkHttpClient();
     private static final String SERVER_URL = "http://163.61.110.132:4000/api/auth/sign-in";
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,7 +72,7 @@ public class LoginActivity extends AppCompatActivity {
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         String token = sp.getString("accessToken", "");
         if (!token.isEmpty()) {
-            navigateToMainActivity(); // vẫn còn token → tự động vào MainActivity
+            navigateToMainActivity();
             return;
         }
 
@@ -77,6 +86,28 @@ public class LoginActivity extends AppCompatActivity {
         facebookBtn = findViewById(R.id.facebook_logo);
         chkRememberMe = findViewById(R.id.chkRememberMe);
 
+        // --- XỬ LÝ ẨN/HIỆN MẬT KHẨU (MỚI THÊM) ---
+        etPassword.setOnTouchListener((v, event) -> {
+            final int DRAWABLE_RIGHT = 2;
+
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                // Lấy chiều rộng của icon drawable
+                int iconWidth = etPassword.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width();
+
+                // Tính toán vùng bấm:
+                // Vùng bấm hợp lệ = (Chiều rộng View) - (PaddingEnd) - (Chiều rộng Icon)
+                // Phải trừ đi paddingEnd vì bạn đã set nó trong XML để icon lùi vào
+                if (event.getX() >= (etPassword.getWidth() - etPassword.getPaddingEnd() - iconWidth)) {
+
+                    togglePasswordVisibility(); // Gọi hàm đổi trạng thái
+
+                    return true; // Đã xử lý sự kiện, không hiện bàn phím hay focus lung tung
+                }
+            }
+            return false;
+        });
+        // ------------------------------------------
+
         loadRememberedAccount();
 
         btnSignIn.setOnClickListener(v -> handleAppSignIn());
@@ -85,6 +116,25 @@ public class LoginActivity extends AppCompatActivity {
 
         setupGoogleSignIn();
         setupFacebookSignIn();
+    }
+
+    // --- HÀM LOGIC ĐỔI ICON VÀ KIỂU TEXT ---
+    private void togglePasswordVisibility() {
+        if (isPasswordVisible) {
+            // Đang hiện -> Chuyển thành Ẩn
+            etPassword.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
+            // Đổi icon về mắt đóng (ic_visibility_off)
+            etPassword.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_visibility_off, 0);
+            isPasswordVisible = false;
+        } else {
+            // Đang ẩn -> Chuyển thành Hiện
+            etPassword.setTransformationMethod(android.text.method.HideReturnsTransformationMethod.getInstance());
+            // Đổi icon về mắt mở (ic_visibility)
+            etPassword.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_visibility, 0);
+            isPasswordVisible = true;
+        }
+        // Đưa con trỏ về cuối dòng text
+        etPassword.setSelection(etPassword.getText().length());
     }
 
     // ------------------------- APP LOGIN -------------------------
@@ -124,7 +174,8 @@ public class LoginActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public void onResponse(Call call, Response response) throws IOException {
+                public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                    assert response.body() != null;
                     String res = response.body().string();
                     if (!response.isSuccessful()) {
                         runOnUiThread(() ->
@@ -160,14 +211,12 @@ public class LoginActivity extends AppCompatActivity {
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
 
-        // Lưu Token phiên làm việc
         editor.putString("accessToken", accessToken != null ? accessToken : "");
         editor.putString("refreshToken", refreshToken != null ? refreshToken : "");
 
-        // Lưu thông tin User Profile
         editor.putString("user_id", user.optString("user_id", ""));
         editor.putString("username", user.optString("username", ""));
-        // ... (Giữ nguyên các trường thông tin user khác)
+        // ... (Các trường khác giữ nguyên nếu có)
 
         // XỬ LÝ REMEMBER ME
         if (chkRememberMe.isChecked()) {
@@ -175,7 +224,6 @@ public class LoginActivity extends AppCompatActivity {
             editor.putString("savedAccount", rawAccount);
             editor.putString("savedPassword", rawPassword);
         } else {
-            // Nếu bỏ tích, xóa thông tin đã lưu (chỉ xóa phần savedAccount/Password)
             editor.remove("isRemembered");
             editor.remove("savedAccount");
             editor.remove("savedPassword");
@@ -198,7 +246,7 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    // ------------------------- GOOGLE LOGIN -------------------------
+    // ------------------------- GOOGLE & FACEBOOK LOGIN (GIỮ NGUYÊN) -------------------------
     private void setupGoogleSignIn() {
         gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
@@ -219,12 +267,11 @@ public class LoginActivity extends AppCompatActivity {
         try {
             GoogleSignInAccount account = task.getResult(ApiException.class);
             if (account != null) {
-                // Lưu tạm thông tin Google vào SharedPreferences nếu muốn
                 SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sp.edit();
                 editor.putString("username", account.getDisplayName());
                 editor.putString("email", account.getEmail());
-                editor.putString("accessToken", "google"); // chỉ để kiểm tra phiên
+                editor.putString("accessToken", "google");
                 editor.apply();
 
                 navigateToMainActivity();
@@ -234,39 +281,32 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    // ------------------------- FACEBOOK LOGIN -------------------------
     private void setupFacebookSignIn() {
         callbackManager = CallbackManager.Factory.create();
-
         LoginManager.getInstance().registerCallback(callbackManager,
                 new FacebookCallback<LoginResult>() {
                     @Override
                     public void onSuccess(LoginResult loginResult) {
-                        // Lưu tạm thông tin Facebook nếu cần
                         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
                         SharedPreferences.Editor editor = sp.edit();
                         editor.putString("accessToken", "facebook");
                         editor.apply();
-
                         navigateToMainActivity();
                     }
-
                     @Override
                     public void onCancel() {}
-
                     @Override
-                    public void onError(FacebookException exception) {
+                    public void onError(@NonNull FacebookException exception) {
                         Toast.makeText(LoginActivity.this, "FB login failed", Toast.LENGTH_SHORT).show();
                     }
                 });
 
         facebookBtn.setOnClickListener(v ->
                 LoginManager.getInstance().logInWithReadPermissions(LoginActivity.this,
-                        Arrays.asList("public_profile"))
+                        List.of("public_profile"))
         );
     }
 
-    // ------------------------- ACTIVITY RESULT -------------------------
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -274,7 +314,6 @@ public class LoginActivity extends AppCompatActivity {
         callbackManager.onActivityResult(requestCode, resultCode, data);
     }
 
-    // ------------------------- NAVIGATION -------------------------
     private void navigateToMainActivity() {
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
         startActivity(intent);
