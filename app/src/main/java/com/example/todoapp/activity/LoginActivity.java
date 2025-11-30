@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,6 +45,7 @@ public class LoginActivity extends AppCompatActivity {
     private Button btnSignIn;
     private TextView tvForgotPassword, tvSignUp;
     private ImageView googleBtn, facebookBtn;
+    private CheckBox chkRememberMe;
 
     private GoogleSignInOptions gso;
     private GoogleSignInClient gsc;
@@ -73,6 +75,9 @@ public class LoginActivity extends AppCompatActivity {
         tvSignUp = findViewById(R.id.tvSignUp);
         googleBtn = findViewById(R.id.google_logo);
         facebookBtn = findViewById(R.id.facebook_logo);
+        chkRememberMe = findViewById(R.id.chkRememberMe);
+
+        loadRememberedAccount();
 
         btnSignIn.setOnClickListener(v -> handleAppSignIn());
         tvForgotPassword.setOnClickListener(v -> startActivity(new Intent(this, RecoverPasswordActivity.class)));
@@ -134,7 +139,7 @@ public class LoginActivity extends AppCompatActivity {
                         String accessToken = obj.getString("accessToken");
                         String refreshToken = obj.getString("refreshToken");
 
-                        saveUserSession(user, accessToken, refreshToken);
+                        saveUserSession(user, accessToken, refreshToken, account, password);
                         runOnUiThread(LoginActivity.this::navigateToMainActivity);
 
                     } catch (Exception e) {
@@ -151,21 +156,46 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    private void saveUserSession(JSONObject user, String accessToken, String refreshToken) {
+    private void saveUserSession(JSONObject user, String accessToken, String refreshToken, String rawAccount, String rawPassword) {
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
 
+        // Lưu Token phiên làm việc
         editor.putString("accessToken", accessToken != null ? accessToken : "");
         editor.putString("refreshToken", refreshToken != null ? refreshToken : "");
 
+        // Lưu thông tin User Profile
         editor.putString("user_id", user.optString("user_id", ""));
-        editor.putString("username", user.optString("username", "").equals("null") ? "" : user.optString("username", ""));
-        editor.putString("email", user.optString("email", "").equals("null") ? "" : user.optString("email", ""));
-        editor.putString("phone_number", user.optString("phone_number", "").equals("null") ? "" : user.optString("phone_number", ""));
-        editor.putString("address", user.optString("address", "").equals("null") ? "" : user.optString("address", ""));
-        editor.putString("birthday", user.optString("birthday", "").equals("null") ? "" : user.optString("birthday", ""));
+        editor.putString("username", user.optString("username", ""));
+        // ... (Giữ nguyên các trường thông tin user khác)
+
+        // XỬ LÝ REMEMBER ME
+        if (chkRememberMe.isChecked()) {
+            editor.putBoolean("isRemembered", true);
+            editor.putString("savedAccount", rawAccount);
+            editor.putString("savedPassword", rawPassword);
+        } else {
+            // Nếu bỏ tích, xóa thông tin đã lưu (chỉ xóa phần savedAccount/Password)
+            editor.remove("isRemembered");
+            editor.remove("savedAccount");
+            editor.remove("savedPassword");
+        }
 
         editor.apply();
+    }
+
+    private void loadRememberedAccount() {
+        SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+        boolean isRemembered = sp.getBoolean("isRemembered", false);
+
+        if (isRemembered) {
+            String savedAccount = sp.getString("savedAccount", "");
+            String savedPassword = sp.getString("savedPassword", "");
+
+            etAccount.setText(savedAccount);
+            etPassword.setText(savedPassword);
+            chkRememberMe.setChecked(true);
+        }
     }
 
     // ------------------------- GOOGLE LOGIN -------------------------

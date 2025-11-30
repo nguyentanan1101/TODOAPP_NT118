@@ -54,7 +54,15 @@ public class ProfileActivity extends AppCompatActivity {
             // Xóa thông tin user trong SharedPreferences
             SharedPreferences sp = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
             SharedPreferences.Editor editor = sp.edit();
-            editor.clear();
+            editor.remove("accessToken");
+            editor.remove("refreshToken");
+            editor.remove("user_id");
+            editor.remove("username");
+            editor.remove("email");
+            editor.remove("phone_number");
+            editor.remove("address");
+            editor.remove("birthday");
+
             editor.apply();
 
             // Google Sign-Out
