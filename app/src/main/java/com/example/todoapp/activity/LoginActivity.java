@@ -4,9 +4,9 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
-import android.view.MotionEvent; // Import thêm cái này để bắt sự kiện chạm
-import android.view.View;
+import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -18,11 +18,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.todoapp.R;
-import com.facebook.CallbackManager;
-import com.facebook.FacebookCallback;
-import com.facebook.FacebookException;
-import com.facebook.login.LoginManager;
-import com.facebook.login.LoginResult;
+
+// --- ĐÃ XÓA CÁC IMPORT CỦA FACEBOOK ---
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -33,8 +30,6 @@ import com.google.android.gms.tasks.Task;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -49,24 +44,31 @@ public class LoginActivity extends AppCompatActivity {
     private EditText etAccount, etPassword;
     private Button btnSignIn;
     private TextView tvForgotPassword, tvSignUp;
-    private ImageView googleBtn, facebookBtn;
+    private ImageView googleBtn, githubBtn; // Đổi tên từ facebookBtn thành githubBtn
     private CheckBox chkRememberMe;
 
-    // Biến theo dõi trạng thái ẩn/hiện mật khẩu
     private boolean isPasswordVisible = false;
 
     private GoogleSignInOptions gso;
     private GoogleSignInClient gsc;
-    private CallbackManager callbackManager;
 
     private OkHttpClient client = new OkHttpClient();
     private static final String SERVER_URL = "http://163.61.110.132:4000/api/auth/sign-in";
+
+    // --- CẤU HÌNH GITHUB ---
+    // Bạn hãy lấy Client ID từ trang Github Developer Settings dán vào đây
+    private static final String GITHUB_CLIENT_ID = "Ov23linN6K2PUJKdvuVQ";
+    private static final String GITHUB_REDIRECT_URI = "todoapp://callback";
+    private static final String GITHUB_AUTH_URL = "https://github.com/login/oauth/authorize";
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        // 1. XỬ LÝ KHI GITHUB REDIRECT VỀ APP
+        processGithubCallback(getIntent());
 
         // --- Kiểm tra token trước khi hiển thị login ---
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
@@ -83,30 +85,21 @@ public class LoginActivity extends AppCompatActivity {
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         tvSignUp = findViewById(R.id.tvSignUp);
         googleBtn = findViewById(R.id.google_logo);
-        facebookBtn = findViewById(R.id.facebook_logo);
+        githubBtn = findViewById(R.id.github_logo); // Ánh xạ nút Github (lưu ý ID trong XML phải là github_logo)
         chkRememberMe = findViewById(R.id.chkRememberMe);
 
-        // --- XỬ LÝ ẨN/HIỆN MẬT KHẨU (MỚI THÊM) ---
+        // --- XỬ LÝ ẨN/HIỆN MẬT KHẨU ---
         etPassword.setOnTouchListener((v, event) -> {
             final int DRAWABLE_RIGHT = 2;
-
             if (event.getAction() == MotionEvent.ACTION_UP) {
-                // Lấy chiều rộng của icon drawable
                 int iconWidth = etPassword.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width();
-
-                // Tính toán vùng bấm:
-                // Vùng bấm hợp lệ = (Chiều rộng View) - (PaddingEnd) - (Chiều rộng Icon)
-                // Phải trừ đi paddingEnd vì bạn đã set nó trong XML để icon lùi vào
                 if (event.getX() >= (etPassword.getWidth() - etPassword.getPaddingEnd() - iconWidth)) {
-
-                    togglePasswordVisibility(); // Gọi hàm đổi trạng thái
-
-                    return true; // Đã xử lý sự kiện, không hiện bàn phím hay focus lung tung
+                    togglePasswordVisibility();
+                    return true;
                 }
             }
             return false;
         });
-        // ------------------------------------------
 
         loadRememberedAccount();
 
@@ -115,26 +108,60 @@ public class LoginActivity extends AppCompatActivity {
         tvSignUp.setOnClickListener(v -> startActivity(new Intent(this, RegisterActivity.class)));
 
         setupGoogleSignIn();
-        setupFacebookSignIn();
+        setupGithubSignIn(); // Thiết lập Github
     }
 
-    // --- HÀM LOGIC ĐỔI ICON VÀ KIỂU TEXT ---
-    private void togglePasswordVisibility() {
-        if (isPasswordVisible) {
-            // Đang hiện -> Chuyển thành Ẩn
-            etPassword.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
-            // Đổi icon về mắt đóng (ic_visibility_off)
-            etPassword.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_visibility_off, 0);
-            isPasswordVisible = false;
-        } else {
-            // Đang ẩn -> Chuyển thành Hiện
-            etPassword.setTransformationMethod(android.text.method.HideReturnsTransformationMethod.getInstance());
-            // Đổi icon về mắt mở (ic_visibility)
-            etPassword.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_visibility, 0);
-            isPasswordVisible = true;
+    // Hàm hỗ trợ để bắt Intent khi Activity chạy ngầm (SingleTask/SingleTop)
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        processGithubCallback(intent);
+    }
+
+    // --- LOGIC XỬ LÝ GITHUB CALLBACK ---
+    private void processGithubCallback(Intent intent) {
+        if (intent != null && intent.getData() != null) {
+            Uri data = intent.getData();
+            if (data.getScheme() != null && data.getScheme().equals("todoapp") && data.getHost().equals("callback")) {
+                String code = data.getQueryParameter("code");
+                if (code != null) {
+                    handleGithubAuthCode(code);
+                }
+            }
         }
-        // Đưa con trỏ về cuối dòng text
-        etPassword.setSelection(etPassword.getText().length());
+    }
+
+    // ------------------------- GITHUB LOGIN -------------------------
+    private void setupGithubSignIn() {
+        githubBtn.setOnClickListener(v -> {
+            // Tạo URL để mở trình duyệt
+            String url = GITHUB_AUTH_URL + "?client_id=" + GITHUB_CLIENT_ID + "&redirect_uri=" + GITHUB_REDIRECT_URI + "&scope=user:email";
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            startActivity(intent);
+        });
+    }
+
+    private void handleGithubAuthCode(String code) {
+        // Có CODE từ Github.
+        // Bước tiếp theo: Gửi CODE này lên Backend Node.js của bạn.
+        // Backend sẽ dùng Code + ClientSecret để đổi lấy AccessToken thật từ Github.
+
+        Toast.makeText(this, "Github Authorized! Code: " + code, Toast.LENGTH_SHORT).show();
+
+        // TẠM THỜI: Giả lập đăng nhập thành công để bạn test luồng App
+        // (Sau này bạn cần viết API gọi lên server ở đây giống hàm handleAppSignIn)
+
+        SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+
+        // Lưu dữ liệu giả để vào được Main
+        editor.putString("accessToken", "github_mock_token_" + code);
+        editor.putString("username", "Github User");
+        editor.putString("email", "github@example.com");
+        editor.apply();
+
+        navigateToMainActivity();
     }
 
     // ------------------------- APP LOGIN -------------------------
@@ -166,7 +193,7 @@ public class LoginActivity extends AppCompatActivity {
 
             client.newCall(request).enqueue(new Callback() {
                 @Override
-                public void onFailure(Call call, IOException e) {
+                public void onFailure(@NonNull Call call, @NonNull IOException e) {
                     e.printStackTrace();
                     runOnUiThread(() ->
                             Toast.makeText(LoginActivity.this, "Unable to connect to the server.", Toast.LENGTH_SHORT).show()
@@ -199,7 +226,6 @@ public class LoginActivity extends AppCompatActivity {
                                 Toast.makeText(LoginActivity.this, "Invalid server response.", Toast.LENGTH_SHORT).show()
                         );
                     }
-
                 }
             });
         } catch (Exception e) {
@@ -216,7 +242,7 @@ public class LoginActivity extends AppCompatActivity {
 
         editor.putString("user_id", user.optString("user_id", ""));
         editor.putString("username", user.optString("username", ""));
-        // ... (Các trường khác giữ nguyên nếu có)
+        // ... (Các trường user khác)
 
         // XỬ LÝ REMEMBER ME
         if (chkRememberMe.isChecked()) {
@@ -239,14 +265,26 @@ public class LoginActivity extends AppCompatActivity {
         if (isRemembered) {
             String savedAccount = sp.getString("savedAccount", "");
             String savedPassword = sp.getString("savedPassword", "");
-
             etAccount.setText(savedAccount);
             etPassword.setText(savedPassword);
             chkRememberMe.setChecked(true);
         }
     }
 
-    // ------------------------- GOOGLE & FACEBOOK LOGIN (GIỮ NGUYÊN) -------------------------
+    private void togglePasswordVisibility() {
+        if (isPasswordVisible) {
+            etPassword.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
+            etPassword.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_visibility_off, 0);
+            isPasswordVisible = false;
+        } else {
+            etPassword.setTransformationMethod(android.text.method.HideReturnsTransformationMethod.getInstance());
+            etPassword.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_visibility, 0);
+            isPasswordVisible = true;
+        }
+        etPassword.setSelection(etPassword.getText().length());
+    }
+
+    // ------------------------- GOOGLE LOGIN -------------------------
     private void setupGoogleSignIn() {
         gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
@@ -281,37 +319,10 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    private void setupFacebookSignIn() {
-        callbackManager = CallbackManager.Factory.create();
-        LoginManager.getInstance().registerCallback(callbackManager,
-                new FacebookCallback<LoginResult>() {
-                    @Override
-                    public void onSuccess(LoginResult loginResult) {
-                        SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
-                        SharedPreferences.Editor editor = sp.edit();
-                        editor.putString("accessToken", "facebook");
-                        editor.apply();
-                        navigateToMainActivity();
-                    }
-                    @Override
-                    public void onCancel() {}
-                    @Override
-                    public void onError(@NonNull FacebookException exception) {
-                        Toast.makeText(LoginActivity.this, "FB login failed", Toast.LENGTH_SHORT).show();
-                    }
-                });
-
-        facebookBtn.setOnClickListener(v ->
-                LoginManager.getInstance().logInWithReadPermissions(LoginActivity.this,
-                        List.of("public_profile"))
-        );
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 1000) handleGoogleSignInResult(data);
-        callbackManager.onActivityResult(requestCode, resultCode, data);
     }
 
     private void navigateToMainActivity() {

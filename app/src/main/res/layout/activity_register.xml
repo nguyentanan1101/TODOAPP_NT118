@@ -129,10 +129,10 @@
                 android:contentDescription="Google Login" />
 
             <ImageView
-                android:id="@+id/facebook_logo"
+                android:id="@+id/github_logo"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:src="@drawable/facebook_logo"
+                android:src="@drawable/github_logo"
                 android:contentDescription="Facebook Login" />
 
         </LinearLayout>

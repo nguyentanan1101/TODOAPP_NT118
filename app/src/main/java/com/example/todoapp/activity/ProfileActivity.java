@@ -11,7 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.todoapp.R;
 import com.example.todoapp.utils.BottomNavHelper;
-import com.facebook.login.LoginManager;
+// ĐÃ XÓA IMPORT FACEBOOK
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -49,9 +49,11 @@ public class ProfileActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // Xử lý đăng xuất (Google + Facebook + xóa session)
+        // Xử lý đăng xuất
         signOut.setOnClickListener(v -> {
-            // Xóa thông tin user trong SharedPreferences
+            // 1. Xóa thông tin session trong SharedPreferences
+            // Lưu ý: Code này chỉ xóa Token phiên làm việc,
+            // vẫn GIỮ LẠI savedAccount/savedPassword cho chức năng "Remember Me" ở màn hình Login
             SharedPreferences sp = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
             SharedPreferences.Editor editor = sp.edit();
             editor.remove("accessToken");
@@ -65,10 +67,8 @@ public class ProfileActivity extends AppCompatActivity {
 
             editor.apply();
 
-            // Google Sign-Out
+            // 2. Google Sign-Out & Điều hướng
             gsc.signOut().addOnCompleteListener(task -> {
-                // Facebook Sign-Out
-                LoginManager.getInstance().logOut();
 
                 Toast.makeText(ProfileActivity.this, "Đăng xuất thành công", Toast.LENGTH_SHORT).show();
 
@@ -87,7 +87,7 @@ public class ProfileActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Khi quay lại màn hình này (ví dụ sau khi chỉnh sửa thông tin), cập nhật lại tên
+        // Khi quay lại màn hình này, cập nhật lại tên
         loadUserData();
     }
 
