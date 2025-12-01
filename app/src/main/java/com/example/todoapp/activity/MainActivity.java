@@ -4,8 +4,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -25,6 +31,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -35,13 +42,25 @@ import okhttp3.Response;
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
+    private TextView tvTitleCompleteTasks;
     private LinearLayout labelDots;
     private Button btnToday, btnPersonal, btnWork;
-    private List<TaskModel> taskList = new ArrayList<>();
+    private ImageView btnSearch, btnNotification, btnCloseSearch, btnAdd;
+    private LinearLayout layoutSearchInput;
+    private EditText etSearch;
+
+    private List<TaskModel> taskList = new ArrayList<>(); // List hiển thị lên màn hình
+    private List<TaskModel> originalTaskList = new ArrayList<>(); // List gốc chứa full dữ liệu
+
     private TaskAdapter adapter;
     private OkHttpClient client = new OkHttpClient();
     private static final String BASE_URL = "http://163.61.110.132:4000/api/tasks/user-tasks";
     private static final String SUBTASK_URL = "http://163.61.110.132:4000/api/subtask/task/";
+
+    // --- BIẾN ĐỂ KIỂM SOÁT VIỆC LOAD DỮ LIỆU ---
+    private String currentFilter = "TODAY"; // Mặc định vào là Today
+    private int totalTasksToLoad = 0; // Tổng số task cần tải subtask
+    private AtomicInteger tasksLoadedCount = new AtomicInteger(0); // Đếm số task đã tải xong subtask
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,8 +74,16 @@ public class MainActivity extends AppCompatActivity {
         btnToday = findViewById(R.id.btnToday);
         btnPersonal = findViewById(R.id.btnPersonal);
         btnWork = findViewById(R.id.btnWork);
+        btnAdd = findViewById(R.id.btnAdd);
+        tvTitleCompleteTasks = findViewById(R.id.tvTitleCompleteTasks);
+        btnSearch = findViewById(R.id.btnSearch);
+        btnNotification = findViewById(R.id.btnNotification);
+        layoutSearchInput = findViewById(R.id.layoutSearchInput);
+        etSearch = findViewById(R.id.etSearch);
+        btnCloseSearch = findViewById(R.id.btnCloseSearch);
 
         initButtons();
+        setupSearchFunctionality();
 
         adapter = new TaskAdapter(this, taskList);
         adapter.setOnTaskClickListener(task -> {
@@ -65,16 +92,41 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        btnAdd.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, AddTaskActivity.class);
+            startActivity(intent);
+        });
+
+        tvTitleCompleteTasks.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, CompletedTasksActivity.class);
+            startActivity(intent);
+        });
+
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         recyclerView.setAdapter(adapter);
+
+        // Mặc định chọn nút Today
+        selectButton(btnToday);
 
         fetchTasksFromAPI();
     }
 
     private void initButtons() {
-        btnToday.setOnClickListener(v -> { selectButton(btnToday); filterTasks("TODAY"); });
-        btnPersonal.setOnClickListener(v -> { selectButton(btnPersonal); filterTasks("PERSONAL"); });
-        btnWork.setOnClickListener(v -> { selectButton(btnWork); filterTasks("WORK"); });
+        btnToday.setOnClickListener(v -> {
+            currentFilter = "TODAY";
+            selectButton(btnToday);
+            filterTasks(currentFilter);
+        });
+        btnPersonal.setOnClickListener(v -> {
+            currentFilter = "PERSONAL";
+            selectButton(btnPersonal);
+            filterTasks(currentFilter);
+        });
+        btnWork.setOnClickListener(v -> {
+            currentFilter = "WORK";
+            selectButton(btnWork);
+            filterTasks(currentFilter);
+        });
     }
 
     private void selectButton(Button selectedButton) {
@@ -112,9 +164,24 @@ public class MainActivity extends AppCompatActivity {
                     String res = response.body().string();
                     JSONObject obj = new JSONObject(res);
                     JSONArray arr = obj.getJSONArray("tasks");
-                    taskList.clear();
+
+                    // Reset các biến đếm và list gốc
+                    originalTaskList.clear();
+                    totalTasksToLoad = arr.length();
+                    tasksLoadedCount.set(0);
+
+                    // Xóa màn hình chờ load (để tránh hiện task cũ)
+                    runOnUiThread(() -> {
+                        taskList.clear();
+                        adapter.notifyDataSetChanged();
+                    });
 
                     String token = sp.getString("accessToken", "");
+
+                    // Nếu không có task nào thì dừng
+                    if (totalTasksToLoad == 0) {
+                        return;
+                    }
 
                     for (int i = 0; i < arr.length(); i++) {
                         JSONObject t = arr.getJSONObject(i);
@@ -130,15 +197,15 @@ public class MainActivity extends AppCompatActivity {
                         TaskModel task = new TaskModel(title, type, new ArrayList<>());
                         if (statusStr.equalsIgnoreCase("Completed")) task.setDone(true);
 
-                        taskList.add(task);
+                        // Lưu vào list gốc, CHƯA hiển thị lên adapter vội
+                        originalTaskList.add(task);
+
+                        // Gọi load subtask
                         loadSubTasks(task, taskId, token);
                     }
 
-                    runOnUiThread(() -> adapter.notifyDataSetChanged());
-
                 } catch (Exception e) {
                     e.printStackTrace();
-                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Error parsing tasks", Toast.LENGTH_SHORT).show());
                 }
             }
         });
@@ -155,38 +222,47 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call call, IOException e) {
                 e.printStackTrace();
+                checkAndRefreshUI();
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                if (!response.isSuccessful()) return;
-
                 try {
-                    String res = response.body().string();
-                    JSONObject obj = new JSONObject(res);
-                    JSONArray arr = obj.getJSONArray("subtasks");
-                    List<SubTaskModel> subTasks = new ArrayList<>();
+                    if (response.isSuccessful()) {
+                        String res = response.body().string();
+                        JSONObject obj = new JSONObject(res);
+                        JSONArray arr = obj.getJSONArray("subtasks");
+                        List<SubTaskModel> subTasks = new ArrayList<>();
 
-                    for (int i = 0; i < arr.length(); i++) {
-                        JSONObject s = arr.getJSONObject(i);
-                        int subId = s.optInt("subtask_id", 0);
-                        String subTitle = s.optString("subtask_name", "");
-                        String subDesc = s.optString("subtask_description", "");
-                        String dueDate = s.optString("due_date", "");
-                        boolean done = s.optString("subtask_status", "").equalsIgnoreCase("Completed");
+                        for (int i = 0; i < arr.length(); i++) {
+                            JSONObject s = arr.getJSONObject(i);
+                            int subId = s.optInt("subtask_id", 0);
+                            String subTitle = s.optString("subtask_name", "");
+                            String subDesc = s.optString("subtask_description", "");
+                            String dueDate = s.optString("due_date", "");
+                            boolean done = s.optString("subtask_status", "").equalsIgnoreCase("Completed");
 
-                        subTasks.add(new SubTaskModel(subId, subTitle, subDesc, dueDate, done));
+                            subTasks.add(new SubTaskModel(subId, subTitle, subDesc, dueDate, done));
+                        }
+                        task.setSubTasks(subTasks);
                     }
-
-                    task.setSubTasks(subTasks);
-
-                    runOnUiThread(() -> adapter.notifyDataSetChanged());
-
                 } catch (Exception e) {
                     e.printStackTrace();
+                } finally {
+                    checkAndRefreshUI();
                 }
             }
         });
+    }
+
+    private void checkAndRefreshUI() {
+        int currentCount = tasksLoadedCount.incrementAndGet();
+
+        if (currentCount == totalTasksToLoad) {
+            runOnUiThread(() -> {
+                filterTasks(currentFilter);
+            });
+        }
     }
 
     private void filterTasks(String filterType) {
@@ -198,13 +274,17 @@ public class MainActivity extends AppCompatActivity {
 
         List<TaskModel> filtered = new ArrayList<>();
 
-        for (TaskModel t : taskList) {
+        // Luôn lọc từ originalTaskList (đã chứa đầy đủ dữ liệu)
+        for (TaskModel t : originalTaskList) {
             switch (filterType) {
                 case "TODAY":
-                    for (SubTaskModel sub : t.getSubTasks()) {
-                        if (sub.getDueDate() != null && sub.getDueDate().equals(todayStr)) {
-                            filtered.add(t);
-                            break;
+                    // Chỉ hiện task có subtask trùng ngày hôm nay
+                    if(t.getSubTasks() != null) {
+                        for (SubTaskModel sub : t.getSubTasks()) {
+                            if (sub.getDueDate() != null && sub.getDueDate().equals(todayStr)) {
+                                filtered.add(t);
+                                break; // Chỉ cần 1 subtask trùng là hiện task cha
+                            }
                         }
                     }
                     break;
@@ -218,6 +298,60 @@ public class MainActivity extends AppCompatActivity {
         }
 
         adapter.setTasks(filtered);
-        adapter.notifyDataSetChanged();
+    }
+
+    private void setupSearchFunctionality() {
+        btnSearch.setOnClickListener(v -> showSearchLayout(true));
+        btnCloseSearch.setOnClickListener(v -> {
+            etSearch.setText("");
+            showSearchLayout(false);
+            filterTasks(currentFilter);
+            hideKeyboard();
+        });
+
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                filterBySearch(s.toString());
+            }
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void showSearchLayout(boolean isSearching) {
+        if (isSearching) {
+            btnSearch.setVisibility(View.GONE);
+            btnNotification.setVisibility(View.GONE);
+            layoutSearchInput.setVisibility(View.VISIBLE);
+            etSearch.requestFocus();
+            showKeyboard();
+        } else {
+            btnSearch.setVisibility(View.VISIBLE);
+            btnNotification.setVisibility(View.VISIBLE);
+            layoutSearchInput.setVisibility(View.GONE);
+        }
+    }
+
+    private void filterBySearch(String query) {
+        List<TaskModel> filteredList = new ArrayList<>();
+        for (TaskModel task : originalTaskList) {
+            if (task.getTitle().toLowerCase().contains(query.toLowerCase())) {
+                filteredList.add(task);
+            }
+        }
+        adapter.setTasks(filteredList);
+    }
+
+    private void showKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) imm.showSoftInput(etSearch, InputMethodManager.SHOW_IMPLICIT);
+    }
+
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) imm.hideSoftInputFromWindow(etSearch.getWindowToken(), 0);
     }
 }

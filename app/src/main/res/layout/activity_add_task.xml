@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:fitsSystemWindows="true">
+
+    <RelativeLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_arrow_back"
+            android:contentDescription="Back"/>
+
+        <TextView
+            android:id="@+id/btnSave"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save"
+            android:textColor="#6750A4"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_alignParentEnd="true"/>
+    </RelativeLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/topBar"
+        android:paddingHorizontal="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <EditText
+                android:id="@+id/etTitle"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:hint="Title"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="#000000"
+                android:background="#EEEEEE"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="20dp"
+                android:paddingStart="20dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start"
+                android:textSize="12sp"
+                android:textColor="#757575"/>
+
+            <LinearLayout
+                android:id="@+id/layoutStartDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp"
+                android:paddingVertical="8dp">
+
+                <ImageView
+                    android:id="@+id/btnPickStartDate"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_calendar"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="DD:"
+                    android:textStyle="bold"
+                    android:textColor="#000"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp"/>
+
+                <EditText
+                    android:id="@+id/etStartDay"
+                    android:layout_width="40dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="2"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:gravity="center"
+                    android:layout_marginStart="4dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MM:"
+                    android:textStyle="bold"
+                    android:textColor="#000"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp"/>
+
+                <EditText
+                    android:id="@+id/etStartMonth"
+                    android:layout_width="40dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="2"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:gravity="center"
+                    android:layout_marginStart="4dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="YYYY:"
+                    android:textStyle="bold"
+                    android:textColor="#000"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp"/>
+
+                <EditText
+                    android:id="@+id/etStartYear"
+                    android:layout_width="60dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="4"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:gravity="center"
+                    android:layout_marginStart="4dp"/>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="End"
+                android:textSize="12sp"
+                android:textColor="#757575"/>
+
+            <LinearLayout
+                android:id="@+id/layoutEndDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="20dp"
+                android:paddingVertical="8dp">
+
+                <ImageView
+                    android:id="@+id/btnPickEndDate"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_calendar"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="DD:"
+                    android:textStyle="bold"
+                    android:textColor="#000"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp"/>
+
+                <EditText
+                    android:id="@+id/etEndDay"
+                    android:layout_width="40dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="2"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:gravity="center"
+                    android:layout_marginStart="4dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MM:"
+                    android:textStyle="bold"
+                    android:textColor="#000"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp"/>
+
+                <EditText
+                    android:id="@+id/etEndMonth"
+                    android:layout_width="40dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="2"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:gravity="center"
+                    android:layout_marginStart="4dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="YYYY:"
+                    android:textStyle="bold"
+                    android:textColor="#000"
+                    android:textSize="16sp"
+                    android:layout_marginStart="16dp"/>
+
+                <EditText
+                    android:id="@+id/etEndYear"
+                    android:layout_width="60dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="4"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:gravity="center"
+                    android:layout_marginStart="4dp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp"
+                android:baselineAligned="false">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Reminder"
+                        android:textSize="12sp"
+                        android:textColor="#757575"/>
+
+                    <Spinner
+                        android:id="@+id/spinnerReminder"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_spinner_border"
+                        android:spinnerMode="dropdown"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Priority"
+                        android:textSize="12sp"
+                        android:textColor="#757575"/>
+
+                    <Spinner
+                        android:id="@+id/spinnerPriority"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_spinner_border"
+                        android:spinnerMode="dropdown"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvSelectedTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Selected time: --:--"
+                android:textColor="#6750A4"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:layout_marginBottom="16dp"/>
+
+            <LinearLayout
+                android:id="@+id/containerSubtasks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/btnAddSubtask"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_add_box"
+                android:background="#00000000"
+                app:tint="#D84315"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="20dp"
+                android:layout_marginLeft="12dp"/>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0"
+                android:layout_marginBottom="20dp"/>
+
+            <EditText
+                android:id="@+id/etNotes"
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:background="@drawable/bg_note_area"
+                android:gravity="top|start"
+                android:hint="Taking Notes"
+                android:padding="16dp"
+                android:textSize="14sp"
+                android:inputType="textMultiLine"
+                android:layout_marginBottom="30dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</RelativeLayout>
