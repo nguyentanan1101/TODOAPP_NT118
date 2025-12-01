@@ -97,8 +97,8 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        tvTitleCompleteTasks.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, CompletedTasksActivity.class);
+        btnNotification.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, NotificationActivity.class);
             startActivity(intent);
         });
 

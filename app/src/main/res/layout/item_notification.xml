@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#FFF9C4"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="12dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:id="@+id/layoutTag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_tag_app"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:gravity="center">
+
+            <ImageView
+                android:id="@+id/imgTagIcon"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:src="@drawable/ic_android"
+                android:layout_marginEnd="4dp"/>
+
+            <TextView
+                android:id="@+id/tvTagName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="App"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#1976D2"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:text="10:30 | 30/10/2025"
+            android:textSize="12sp"
+            android:textColor="#616161"/>
+
+        <View
+            android:id="@+id/viewUnread"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:background="@drawable/dot_shape"
+            android:backgroundTint="#D32F2F"
+            android:visibility="visible"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Tiêu đề thông báo"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        android:layout_marginTop="8dp"/>
+
+    <TextView
+        android:id="@+id/tvContent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Nội dung chi tiết..."
+        android:textSize="14sp"
+        android:textColor="#424242"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="12dp"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E0E0E0"/>
+
+</LinearLayout>

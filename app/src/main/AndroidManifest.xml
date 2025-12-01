@@ -16,14 +16,20 @@
         android:theme="@style/Theme.TODOAPP"
         android:usesCleartextTraffic="true">
         <activity
-            android:name=".activity.AddTaskActivity"
+            android:name=".activity.NotificationActivity"
             android:exported="false" />
+        <activity
+            android:name=".activity.AddTaskActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activity.CompletedTasksActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activity.TaskDetailActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activity.ResetPasswordActivity"
             android:exported="false"
@@ -42,7 +48,8 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activity.ViewAccountActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activity.EditAccountActivity"
             android:exported="false"
@@ -50,7 +57,8 @@
         <activity
             android:name=".activity.MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activity.LoginActivity"
             android:exported="true"
@@ -73,10 +81,12 @@
         </activity>
         <activity
             android:name=".activity.ProfileActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activity.CalendarActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>
