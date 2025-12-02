@@ -82,16 +82,16 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             switch (task.getType()) {
                 case PERSONAL:
                     typeLabel = "Personal";
-                    colorCode = "#67a4f5"; // Xanh dương
+                    colorCode = "#E3F2FD"; // Xanh dương
                     break;
                 case WORK_PRIVATE:
                 case WORK_GROUP:
                     typeLabel = "Work";
-                    colorCode = "#d9a46f"; // Vàng
+                    colorCode = "#FFFFFF"; // Vàng
                     break;
                 default:
                     typeLabel = "Other";
-                    colorCode = "#EEEEEE";
+                    colorCode = "#F5F5F5";
                     break;
             }
         }
@@ -111,13 +111,13 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         switch (priority) {
             case "High":
             case "Critical":
-                priorityColor = Color.parseColor("#FF5252"); // Đỏ
+                priorityColor = Color.parseColor("#D32F2F"); // Đỏ
                 break;
             case "Medium":
-                priorityColor = Color.parseColor("#AB47BC"); // Tím (cho khác biệt)
+                priorityColor = Color.parseColor("#FBC02D"); // vàng nghệ
                 break;
             default: // Low
-                priorityColor = Color.parseColor("#757575"); // Xám đậm
+                priorityColor = Color.parseColor("#388E3C"); // xanh lá
                 break;
         }
 
@@ -215,7 +215,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
             // Ánh xạ ID mới
             viewPriorityDot = itemView.findViewById(R.id.viewPriorityDot);
-            tvPriority = itemView.findViewById(R.id.tvPriority);
 
             subtaskContainer = itemView.findViewById(R.id.subtaskContainer);
             cardView = itemView.findViewById(R.id.taskCard);

@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
 
     private TaskAdapter adapter;
     private OkHttpClient client = new OkHttpClient();
-    private static final String BASE_URL = "http://34.124.178.44:4000/api/tasks/user-tasks";
+    private static final String BASE_URL = "http://34.124.178.44:4000/api/tasks/created-by-me";
     private static final String SUBTASK_URL = "http://34.124.178.44:4000/api/subtask/task/";
 
     private String currentFilter = "TODAY";
@@ -255,10 +255,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                if (!response.isSuccessful()) {
-                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to load tasks", Toast.LENGTH_SHORT).show());
-                    return;
-                }
+                if (!response.isSuccessful()) return;
 
                 try {
                     String res = response.body().string();
@@ -275,12 +272,27 @@ public class MainActivity extends AppCompatActivity {
                     });
 
                     String token = sp.getString("accessToken", "");
-
                     List<JSONObject> validTasks = new ArrayList<>();
+
+                    // --- BƯỚC 1: LỌC VÀ CHUẨN HÓA DỮ LIỆU ---
                     for (int i = 0; i < arr.length(); i++) {
                         JSONObject t = arr.getJSONObject(i);
-                        String statusStr = t.optString("task_status", "");
 
+                        // 1. XỬ LÝ STATUS BỊ NULL
+                        // Kiểm tra cả "task_status" và "status"
+                        String statusStr = t.optString("task_status");
+                        if (statusStr == null || statusStr.isEmpty() || statusStr.equals("null")) {
+                            statusStr = t.optString("status");
+                        }
+                        // Nếu vẫn null -> Gán mặc định là "ToDo" để hiện lên App
+                        if (statusStr == null || statusStr.isEmpty() || statusStr.equals("null")) {
+                            statusStr = "ToDo";
+                        }
+
+                        // Lưu lại status chuẩn này vào JSON object để dùng ở bước sau
+                        t.put("safe_status", statusStr);
+
+                        // 2. LỌC: Chỉ lấy task đang làm (Working/ToDo)
                         if (statusStr.equalsIgnoreCase("Working") ||
                                 statusStr.equalsIgnoreCase("ToDo")) {
                             validTasks.add(t);
@@ -290,12 +302,18 @@ public class MainActivity extends AppCompatActivity {
                     totalTasksToLoad = validTasks.size();
                     if (totalTasksToLoad == 0) return;
 
+                    // --- BƯỚC 2: TẠO MODEL TỪ DANH SÁCH HỢP LỆ ---
                     for (JSONObject t : validTasks) {
                         int taskId = t.optInt("task_id", 0);
-                        String title = t.optString("task_name", "");
+
+                        // 3. XỬ LÝ TÊN TASK (JSON trả về 'title' nhưng code cũ dùng 'task_name')
+                        String title = t.optString("task_name");
+                        if (title.isEmpty()) title = t.optString("title", "No Title");
+
                         int createdBy = t.optInt("created_by", 0);
                         int projectId = t.optInt("project_id", 0);
 
+                        // 4. PHÂN LOẠI PERSONAL / WORK
                         TaskModel.TaskType type;
                         if (projectId > 0) {
                             type = TaskModel.TaskType.WORK_GROUP;
@@ -309,11 +327,15 @@ public class MainActivity extends AppCompatActivity {
 
                         String priority = t.optString("priority", "Low");
 
+                        // Tạo TaskModel
                         TaskModel task = new TaskModel(taskId, title, type, new ArrayList<>(), priority);
 
-                        String statusStr = t.optString("task_status", "ToDo");
-                        boolean isDone = statusStr.equalsIgnoreCase("Completed") || statusStr.equalsIgnoreCase("Done");
+                        // Set lại status từ biến safe_status đã xử lý ở trên
+                        String safeStatus = t.optString("safe_status", "ToDo");
+                        boolean isDone = safeStatus.equalsIgnoreCase("Completed") || safeStatus.equalsIgnoreCase("Done");
                         task.setDone(isDone);
+
+                        task.setStatus(safeStatus);
 
                         originalTaskList.add(task);
                         loadSubTasks(task, taskId, token);
@@ -381,9 +403,6 @@ public class MainActivity extends AppCompatActivity {
     private void filterTasks(String filterType) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         String todayStr = sdf.format(new Date());
-
-        if (filterType.equals("TODAY")) labelDots.setVisibility(View.VISIBLE);
-        else labelDots.setVisibility(View.GONE);
 
         List<TaskModel> filtered = new ArrayList<>();
 

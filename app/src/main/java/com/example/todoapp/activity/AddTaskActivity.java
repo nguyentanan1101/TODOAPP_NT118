@@ -21,7 +21,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.todoapp.R;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -61,7 +60,10 @@ public class AddTaskActivity extends AppCompatActivity {
     private Calendar endCal = Calendar.getInstance();
 
     private OkHttpClient client = new OkHttpClient();
+
+    // URL API
     private static final String CREATE_TASK_URL = "http://34.124.178.44:4000/api/tasks/create";
+    private static final String CREATE_SUBTASK_BASE_URL = "http://34.124.178.44:4000/api/subtask/task/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,63 +75,54 @@ public class AddTaskActivity extends AppCompatActivity {
         setDefaultDate();
         setupSpinners();
 
-        // Cài đặt validate nhập liệu ngày tháng
+        // Setup validation
         setupDateInputValidation(etStartDay, etStartMonth, etStartYear);
         setupDateInputValidation(etEndDay, etEndMonth, etEndYear);
-
-        addSubtaskRow();
     }
 
-    // --- LOGIC VALIDATE NGÀY THÁNG AN TOÀN ---
+    // --- LOGIC VALIDATE NGÀY THÁNG ---
     private void setupDateInputValidation(EditText etDay, EditText etMonth, EditText etYear) {
         View.OnFocusChangeListener listener = (v, hasFocus) -> {
             if (!hasFocus) {
                 validateDateFields(etDay, etMonth, etYear);
             }
         };
-
         etDay.setOnFocusChangeListener(listener);
         etMonth.setOnFocusChangeListener(listener);
         etYear.setOnFocusChangeListener(listener);
     }
 
     private void validateDateFields(EditText etDay, EditText etMonth, EditText etYear) {
-        String dStr = etDay.getText().toString().trim();
-        String mStr = etMonth.getText().toString().trim();
-        String yStr = etYear.getText().toString().trim();
-
-        if (dStr.isEmpty() && mStr.isEmpty()) return; // Chưa nhập gì thì bỏ qua
-
         try {
+            String dStr = etDay.getText().toString().trim();
+            String mStr = etMonth.getText().toString().trim();
+            String yStr = etYear.getText().toString().trim();
+
+            if (dStr.isEmpty() && mStr.isEmpty() && yStr.isEmpty()) return;
+
             int d = dStr.isEmpty() ? 1 : Integer.parseInt(dStr);
             int m = mStr.isEmpty() ? 1 : Integer.parseInt(mStr);
-            // Nếu năm chưa nhập đủ 4 số, lấy năm hiện tại để check ngày hợp lệ
             int y = (yStr.length() < 4) ? Calendar.getInstance().get(Calendar.YEAR) : Integer.parseInt(yStr);
 
-            // 1. Validate Tháng
-            if (m < 1) m = 1;
-            if (m > 12) m = 12;
+            if (m < 1) m = 1; if (m > 12) m = 12;
 
-            // 2. Validate Ngày theo Tháng/Năm
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.YEAR, y);
             cal.set(Calendar.MONTH, m - 1);
             cal.set(Calendar.DAY_OF_MONTH, 1);
             int maxDay = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-            if (d < 1) d = 1;
-            if (d > maxDay) d = maxDay;
+            if (d < 1) d = 1; if (d > maxDay) d = maxDay;
 
-            // 3. Update lại UI (thêm số 0 nếu cần)
             if (!dStr.isEmpty()) etDay.setText(String.format(Locale.getDefault(), "%02d", d));
             if (!mStr.isEmpty()) etMonth.setText(String.format(Locale.getDefault(), "%02d", m));
 
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // --- API CALL ---
+    // --- HÀM TẠO TASK (BƯỚC 1) ---
     private void createNewTask(String title, String startDate, String endDate, String priority, String reminder, String note, List<String> subtasks) {
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         String accessToken = sp.getString("accessToken", "");
@@ -141,24 +134,26 @@ public class AddTaskActivity extends AppCompatActivity {
 
         try {
             JSONObject jsonBody = new JSONObject();
+            // Key JSON phải khớp với Backend
             jsonBody.put("title", title);
+            jsonBody.put("task_name", title); // Gửi thêm dự phòng
+
             jsonBody.put("description", note);
+            jsonBody.put("task_description", note); // Gửi thêm dự phòng
+
             jsonBody.put("start_date", startDate);
             jsonBody.put("due_date", endDate);
             jsonBody.put("priority", priority);
             jsonBody.put("reminder", reminder);
+
+            // Gửi cả 2 key status cho chắc
             jsonBody.put("status", "ToDo");
+            jsonBody.put("task_status", "ToDo");
 
-            JSONArray subtaskArray = new JSONArray();
-            for (String subName : subtasks) {
-                JSONObject subObj = new JSONObject();
-                subObj.put("subtask_name", subName);
-                subObj.put("subtask_status", "ToDo");
-                subtaskArray.put(subObj);
-            }
-            jsonBody.put("subtasks", subtaskArray);
-
-            RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.get("application/json; charset=utf-8"));
+            RequestBody body = RequestBody.create(
+                    jsonBody.toString(),
+                    MediaType.get("application/json; charset=utf-8")
+            );
 
             Request request = new Request.Builder()
                     .url(CREATE_TASK_URL)
@@ -176,10 +171,31 @@ public class AddTaskActivity extends AppCompatActivity {
                 public void onResponse(Call call, Response response) throws IOException {
                     String resStr = response.body().string();
                     if (response.isSuccessful()) {
-                        runOnUiThread(() -> {
-                            Toast.makeText(AddTaskActivity.this, "Tạo task thành công!", Toast.LENGTH_SHORT).show();
-                            finish();
-                        });
+                        try {
+                            // Parse lấy task_id vừa tạo
+                            JSONObject resObj = new JSONObject(resStr);
+
+                            // Kiểm tra cấu trúc JSON trả về để lấy ID đúng
+                            int taskId = -1;
+                            if (resObj.has("task")) {
+                                JSONObject taskObj = resObj.getJSONObject("task");
+                                taskId = taskObj.optInt("task_id", -1);
+                                if (taskId == -1) taskId = taskObj.optInt("id", -1);
+                            }
+
+                            if (taskId != -1 && !subtasks.isEmpty()) {
+                                // --- BƯỚC 2: TẠO SUBTASK ---
+                                createSubTasksForTask(taskId, subtasks, accessToken);
+                            } else {
+                                runOnUiThread(() -> {
+                                    Toast.makeText(AddTaskActivity.this, "Tạo task thành công!", Toast.LENGTH_SHORT).show();
+                                    finish();
+                                });
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            runOnUiThread(() -> finish());
+                        }
                     } else {
                         Log.e("API_ERROR", "Code: " + response.code() + " - " + resStr);
                         runOnUiThread(() -> Toast.makeText(AddTaskActivity.this, "Lỗi tạo task: " + response.code(), Toast.LENGTH_SHORT).show());
@@ -192,24 +208,55 @@ public class AddTaskActivity extends AppCompatActivity {
         }
     }
 
+    // --- HÀM TẠO SUBTASK (BƯỚC 2) ---
+    private void createSubTasksForTask(int taskId, List<String> subtasks, String accessToken) {
+        // Gửi request song song cho từng subtask
+        for (String subName : subtasks) {
+            try {
+                JSONObject jsonSub = new JSONObject();
+                jsonSub.put("title", subName);
+                jsonSub.put("subtask_status", "ToDo");
+
+                RequestBody body = RequestBody.create(jsonSub.toString(), MediaType.get("application/json; charset=utf-8"));
+
+                // URL: .../api/subtask/task/{task_id}
+                String url = CREATE_SUBTASK_BASE_URL + taskId;
+
+                Request request = new Request.Builder()
+                        .url(url)
+                        .addHeader("Authorization", "Bearer " + accessToken)
+                        .post(body)
+                        .build();
+
+                client.newCall(request).enqueue(new Callback() {
+                    @Override public void onFailure(Call call, IOException e) {}
+                    @Override public void onResponse(Call call, Response response) throws IOException {}
+                });
+
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+
+        runOnUiThread(() -> {
+            Toast.makeText(AddTaskActivity.this, "Đã tạo Task và Subtasks!", Toast.LENGTH_SHORT).show();
+            finish();
+        });
+    }
+
     // --- SETUP LISTENERS ---
     private void setupListeners() {
         btnBack.setOnClickListener(v -> finish());
-
         btnPickStartDate.setOnClickListener(v -> showDatePicker(startCal, etStartDay, etStartMonth, etStartYear));
         btnPickEndDate.setOnClickListener(v -> showDatePicker(endCal, etEndDay, etEndMonth, etEndYear));
-
         tvSelectedTime.setOnClickListener(v -> showCustomReminderPicker());
         btnAddSubtask.setOnClickListener(v -> addSubtaskRow());
 
         btnSave.setOnClickListener(v -> {
             String title = etTitle.getText().toString().trim();
             if (title.isEmpty()) {
-                Toast.makeText(this, "Please enter title", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Vui lòng nhập tiêu đề!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Validate lần cuối
             validateDateFields(etStartDay, etStartMonth, etStartYear);
             validateDateFields(etEndDay, etEndMonth, etEndYear);
 
@@ -265,7 +312,7 @@ public class AddTaskActivity extends AppCompatActivity {
             @Override public void onNothingSelected(AdapterView<?> p) {}
         });
 
-        String[] priorityOptions = {"Low", "Medium", "High", "Critical"};
+        String[] priorityOptions = {"Low", "Medium", "High"};
         ArrayAdapter<String> pAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, priorityOptions);
         pAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerPriority.setAdapter(pAdapter);

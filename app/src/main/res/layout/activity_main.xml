@@ -158,7 +158,7 @@
                 android:layout_height="12dp"
                 android:layout_marginEnd="6dp"
                 android:background="@drawable/dot_shape"
-                android:backgroundTint="#FF5252" />  <TextView
+                android:backgroundTint="#D32F2F" />  <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="High"
@@ -178,7 +178,7 @@
                 android:layout_height="12dp"
                 android:layout_marginEnd="6dp"
                 android:background="@drawable/dot_shape"
-                android:backgroundTint="#AB47BC" />  <TextView
+                android:backgroundTint="#FBC02D" />  <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Medium"
@@ -197,7 +197,9 @@
                 android:layout_height="12dp"
                 android:layout_marginEnd="6dp"
                 android:background="@drawable/dot_shape"
-                android:backgroundTint="#9E9E9E" />  <TextView
+                android:backgroundTint="#388E3C" />
+
+            <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Low"
