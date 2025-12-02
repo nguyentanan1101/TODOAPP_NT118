@@ -6,13 +6,15 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu; // Import PopupMenu
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -45,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvTitleCompleteTasks;
     private LinearLayout labelDots;
     private Button btnToday, btnPersonal, btnWork;
-    private ImageView btnSearch, btnNotification, btnCloseSearch, btnAdd;
+    private ImageView btnSearch, btnNotification, btnCloseSearch, btnAdd, btnSort;
     private LinearLayout layoutSearchInput;
     private EditText etSearch;
 
@@ -54,8 +56,8 @@ public class MainActivity extends AppCompatActivity {
 
     private TaskAdapter adapter;
     private OkHttpClient client = new OkHttpClient();
-    private static final String BASE_URL = "http://163.61.110.132:4000/api/tasks/user-tasks";
-    private static final String SUBTASK_URL = "http://163.61.110.132:4000/api/subtask/task/";
+    private static final String BASE_URL = "http://34.124.178.44:4000/api/tasks/user-tasks";
+    private static final String SUBTASK_URL = "http://34.124.178.44:4000/api/subtask/task/";
 
     private String currentFilter = "TODAY";
     private int totalTasksToLoad = 0;
@@ -81,9 +83,13 @@ public class MainActivity extends AppCompatActivity {
         layoutSearchInput = findViewById(R.id.layoutSearchInput);
         etSearch = findViewById(R.id.etSearch);
         btnCloseSearch = findViewById(R.id.btnCloseSearch);
+        btnSort = findViewById(R.id.btnSort); // Ánh xạ nút Sort
 
         initButtons();
         setupSearchFunctionality();
+
+        // --- SETUP SORT BUTTON ---
+        btnSort.setOnClickListener(v -> showSortMenu(v));
 
         // Setup RecyclerView
         adapter = new TaskAdapter(this, taskList);
@@ -113,6 +119,82 @@ public class MainActivity extends AppCompatActivity {
 
         selectButton(btnToday);
     }
+
+    // --- HÀM HIỂN THỊ MENU SORT ---
+    private void showSortMenu(View view) {
+        PopupMenu popup = new PopupMenu(this, view);
+        // Thêm menu bằng code (hoặc dùng menu xml)
+        popup.getMenu().add(0, 1, 0, "Sort by Due Date (A-Z)");
+        popup.getMenu().add(0, 2, 0, "Sort by Priority (High-Low)");
+        popup.getMenu().add(0, 3, 0, "Sort by Name (A-Z)");
+
+        popup.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case 1:
+                    sortTasksByDate();
+                    return true;
+                case 2:
+                    sortTasksByPriority();
+                    return true;
+                case 3:
+                    sortTasksByName();
+                    return true;
+            }
+            return false;
+        });
+        popup.show();
+    }
+
+    // --- LOGIC SẮP XẾP ---
+
+    private void sortTasksByName() {
+        // Sắp xếp danh sách HIỆN TẠI (đang hiển thị trên màn hình)
+        // Nếu bạn muốn sắp xếp toàn bộ rồi mới lọc lại thì sort originalTaskList
+        // Ở đây tôi sort trực tiếp taskList để người dùng thấy ngay kết quả trên màn hình
+        Collections.sort(taskList, (t1, t2) -> t1.getTitle().compareToIgnoreCase(t2.getTitle()));
+        adapter.notifyDataSetChanged();
+    }
+
+    private void sortTasksByDate() {
+        Collections.sort(taskList, (t1, t2) -> {
+            String d1 = getSubTaskDueDate(t1);
+            String d2 = getSubTaskDueDate(t2);
+            // Nếu ko có ngày, đẩy xuống cuối
+            if (d1.isEmpty()) return 1;
+            if (d2.isEmpty()) return -1;
+            return d1.compareTo(d2);
+        });
+        adapter.notifyDataSetChanged();
+    }
+
+    // Hàm phụ lấy ngày của subtask đầu tiên (vì logic Today dựa vào subtask)
+    // Nếu bạn có ngày của task cha thì dùng t.getDueDate()
+    private String getSubTaskDueDate(TaskModel t) {
+        if (t.getSubTasks() != null && !t.getSubTasks().isEmpty()) {
+            return t.getSubTasks().get(0).getDueDate();
+        }
+        return "";
+    }
+
+    private void sortTasksByPriority() {
+        // Priority: High > Medium > Low
+        Collections.sort(taskList, (t1, t2) -> {
+            int p1 = getPriorityValue(t1.getPriority());
+            int p2 = getPriorityValue(t2.getPriority());
+            return p2 - p1; // Giảm dần (High trước)
+        });
+        adapter.notifyDataSetChanged();
+    }
+
+    private int getPriorityValue(String priority) {
+        if (priority == null) return 0;
+        if (priority.equalsIgnoreCase("High") || priority.equalsIgnoreCase("Critical")) return 3;
+        if (priority.equalsIgnoreCase("Medium")) return 2;
+        if (priority.equalsIgnoreCase("Low")) return 1;
+        return 0;
+    }
+
+    // ... (Các phần còn lại của MainActivity giữ nguyên) ...
 
     @Override
     protected void onResume() {
@@ -149,9 +231,14 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         String accessToken = sp.getString("accessToken", "");
 
-        // --- 1. LẤY ID CỦA NGƯỜI DÙNG HIỆN TẠI ---
-        String currentUserIdStr = sp.getString("user_id", "0"); // Mặc định 0 nếu lỗi
-        int currentUserId = Integer.parseInt(currentUserIdStr);
+        String userIdStr = sp.getString("user_id", "0");
+        int currentUserId = 0;
+        try {
+            currentUserId = Integer.parseInt(userIdStr);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        }
+        final int myId = currentUserId;
 
         Request request = new Request.Builder()
                 .url(BASE_URL)
@@ -189,7 +276,6 @@ public class MainActivity extends AppCompatActivity {
 
                     String token = sp.getString("accessToken", "");
 
-                    // Lọc sơ bộ: Chỉ lấy Task chưa hoàn thành
                     List<JSONObject> validTasks = new ArrayList<>();
                     for (int i = 0; i < arr.length(); i++) {
                         JSONObject t = arr.getJSONObject(i);
@@ -207,20 +293,23 @@ public class MainActivity extends AppCompatActivity {
                     for (JSONObject t : validTasks) {
                         int taskId = t.optInt("task_id", 0);
                         String title = t.optString("task_name", "");
-                        int createdBy = t.optInt("created_by", 0); // Lấy người tạo task
+                        int createdBy = t.optInt("created_by", 0);
+                        int projectId = t.optInt("project_id", 0);
 
-                        // --- 2. LOGIC MỚI: PHÂN LOẠI THEO CREATED_BY ---
                         TaskModel.TaskType type;
-                        if (createdBy == currentUserId) {
-                            // Do mình tạo -> PERSONAL
-                            type = TaskModel.TaskType.PERSONAL;
+                        if (projectId > 0) {
+                            type = TaskModel.TaskType.WORK_GROUP;
                         } else {
-                            // Do người khác tạo -> WORK (Công việc được giao)
-                            // Ở đây tôi dùng WORK_PRIVATE làm đại diện cho Work
-                            type = TaskModel.TaskType.WORK_PRIVATE;
+                            if (createdBy == myId) {
+                                type = TaskModel.TaskType.PERSONAL;
+                            } else {
+                                type = TaskModel.TaskType.WORK_PRIVATE;
+                            }
                         }
 
-                        TaskModel task = new TaskModel(taskId, title, type, new ArrayList<>());
+                        String priority = t.optString("priority", "Low");
+
+                        TaskModel task = new TaskModel(taskId, title, type, new ArrayList<>(), priority);
 
                         String statusStr = t.optString("task_status", "ToDo");
                         boolean isDone = statusStr.equalsIgnoreCase("Completed") || statusStr.equalsIgnoreCase("Done");
@@ -237,19 +326,20 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // ... (Các phần loadSubTasks, checkAndRefreshUI giữ nguyên) ...
     private void loadSubTasks(TaskModel task, int taskId, String accessToken) {
         Request request = new Request.Builder()
                 .url(SUBTASK_URL + taskId)
                 .addHeader("Authorization", "Bearer " + accessToken)
                 .get()
                 .build();
+
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
                 e.printStackTrace();
                 checkAndRefreshUI();
             }
+
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 try {
@@ -258,6 +348,7 @@ public class MainActivity extends AppCompatActivity {
                         JSONObject obj = new JSONObject(res);
                         JSONArray arr = obj.getJSONArray("subtasks");
                         List<SubTaskModel> subTasks = new ArrayList<>();
+
                         for (int i = 0; i < arr.length(); i++) {
                             JSONObject s = arr.getJSONObject(i);
                             int subId = s.optInt("subtask_id", 0);
@@ -265,6 +356,7 @@ public class MainActivity extends AppCompatActivity {
                             String subDesc = s.optString("subtask_description", "");
                             String dueDate = s.optString("due_date", "");
                             String subStatus = s.optString("subtask_status", "");
+
                             boolean done = subStatus.equalsIgnoreCase("Completed") || subStatus.equalsIgnoreCase("Done");
                             subTasks.add(new SubTaskModel(subId, subTitle, subDesc, dueDate, done));
                         }
@@ -300,7 +392,6 @@ public class MainActivity extends AppCompatActivity {
 
             switch (filterType) {
                 case "TODAY":
-                    // Logic lọc Today giữ nguyên (dựa vào subtask)
                     if(t.getSubTasks() != null) {
                         for (SubTaskModel sub : t.getSubTasks()) {
                             if (sub.getDueDate() != null && sub.getDueDate().equals(todayStr)) {
@@ -310,26 +401,25 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                     break;
-
                 case "PERSONAL":
-                    // Chỉ lấy loại PERSONAL
                     if (t.getType() == TaskModel.TaskType.PERSONAL) {
                         filtered.add(t);
                     }
                     break;
-
                 case "WORK":
-                    // Lấy tất cả các loại WORK (không phải Personal)
                     if (t.getType() != TaskModel.TaskType.PERSONAL) {
                         filtered.add(t);
                     }
                     break;
             }
         }
-        adapter.setTasks(filtered);
+
+        // Cập nhật lại taskList (đây là list đang hiển thị trên màn hình)
+        taskList.clear();
+        taskList.addAll(filtered);
+        adapter.notifyDataSetChanged();
     }
 
-    // ... (Phần Search và Keyboard giữ nguyên) ...
     private void setupSearchFunctionality() {
         btnSearch.setOnClickListener(v -> showSearchLayout(true));
         btnCloseSearch.setOnClickListener(v -> {
@@ -362,7 +452,11 @@ public class MainActivity extends AppCompatActivity {
         for (TaskModel task : originalTaskList) {
             if (task.getTitle().toLowerCase().contains(query.toLowerCase())) filteredList.add(task);
         }
-        adapter.setTasks(filteredList);
+
+        // Cập nhật taskList hiển thị
+        taskList.clear();
+        taskList.addAll(filteredList);
+        adapter.notifyDataSetChanged();
     }
     private void showKeyboard() {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);

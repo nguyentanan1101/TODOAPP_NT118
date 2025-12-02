@@ -45,8 +45,8 @@ public class CompletedTasksActivity extends AppCompatActivity {
     private List<TaskModel> completedTaskList = new ArrayList<>();
 
     private OkHttpClient client = new OkHttpClient();
-    private static final String BASE_URL = "http://163.61.110.132:4000/api/tasks/user-tasks";
-    private static final String SUBTASK_URL = "http://163.61.110.132:4000/api/subtask/task/";
+    private static final String BASE_URL = "http://34.124.178.44:4000/api/tasks/user-tasks";
+    private static final String SUBTASK_URL = "http://34.124.178.44:4000/api/subtask/task/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,7 +150,11 @@ public class CompletedTasksActivity extends AppCompatActivity {
                                 type = TaskModel.TaskType.WORK_GROUP; // hoặc WORK_PRIVATE
                             }
 
-                            TaskModel task = new TaskModel(taskId, title, type, new ArrayList<>());
+                            // Lấy thêm priority từ JSON
+                            String priority = t.optString("priority", "Low");
+
+                            // Truyền priority vào Constructor (tham số cuối cùng)
+                            TaskModel task = new TaskModel(taskId, title, type, new ArrayList<>(), priority);
                             task.setDone(true);
 
                             String rawDate = t.optString("updated_at", "");

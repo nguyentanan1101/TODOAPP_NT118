@@ -1,47 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/your_account"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".activity.EditAccountActivity"
-    android:orientation="vertical"
     android:background="#F4F4F4"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    tools:context=".activity.EditAccountActivity">
 
-    <!-- Thanh trên -->
     <RelativeLayout
         android:id="@+id/topBarInfo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
+        android:elevation="4dp"
         android:gravity="center_vertical"
-        android:elevation="4dp">
+        android:orientation="horizontal"
+        android:padding="16dp">
 
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
             android:text="@string/your_account"
-            android:textSize="20sp"
-            android:textStyle="bold"
             android:textColor="#333333"
-            android:layout_centerHorizontal="true" />
+            android:textSize="20sp"
+            android:textStyle="bold" />
     </RelativeLayout>
 
-    <!-- Nội dung chính -->
     <ScrollView
-        android:layout_below="@id/topBarInfo"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@id/topBarInfo"
         android:padding="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:background="@drawable/bg_white_rounded"
+            android:orientation="vertical"
             android:padding="24dp">
 
             <FrameLayout
@@ -51,30 +50,38 @@
                 android:layout_gravity="center"
                 android:layout_marginTop="16dp">
 
-                <!-- Avatar chính -->
-                <ImageView
-                    android:id="@+id/imgAvatar"
+                <androidx.cardview.widget.CardView
                     android:layout_width="100dp"
                     android:layout_height="100dp"
-                    android:src="@drawable/ic_user"
-                    android:scaleType="centerCrop"
-                    android:background="@drawable/bg_circle_white"
-                    android:layout_gravity="center" />
+                    app:cardBackgroundColor="@android:color/transparent"
+                    app:cardCornerRadius="50dp"
+                    app:cardElevation="0dp">
 
-                <!-- Icon đổi ảnh (đè lên góc phải dưới) -->
+                    <ImageView
+                        android:id="@+id/imgAvatar"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_user" />
+
+                </androidx.cardview.widget.CardView>
+
                 <ImageView
                     android:id="@+id/btnChangePhoto"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_camera"
-                    android:background="@drawable/bg_circle_blue"
-                    android:padding="6dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:layout_gravity="bottom|end"
-                    android:layout_margin="4dp" />
+                    android:layout_marginEnd="4dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="@drawable/bg_circle_blue"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_camera" />
+
             </FrameLayout>
 
 
-            <!-- Name -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -86,18 +93,17 @@
                 android:id="@+id/edtName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:backgroundTint="#CCCCCC"
+                android:inputType="textPersonName"
                 android:text="Adam"
                 android:textColor="#000"
-                android:textSize="15sp"
-                android:backgroundTint="#CCCCCC"
-                android:inputType="textPersonName" />
+                android:textSize="15sp" />
 
-            <!-- Birthday & Gender -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:layout_marginTop="12dp"
+                android:orientation="horizontal"
                 android:weightSum="2">
 
                 <LinearLayout
@@ -120,22 +126,23 @@
 
                         <EditText
                             android:id="@+id/edtDate"
-                            android:layout_width="110dp"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:backgroundTint="#CCCCCC"
                             android:hint="dd/MM/yyyy"
                             android:inputType="none"
                             android:textColor="#000"
-                            android:textSize="15sp"
-                            android:backgroundTint="#CCCCCC" />
+                            android:textSize="15sp" />
 
                         <ImageButton
                             android:id="@+id/btnPickDate"
                             android:layout_width="48dp"
                             android:layout_height="wrap_content"
-                            android:src="@drawable/ic_calendar"
                             android:background="?attr/selectableItemBackgroundBorderless"
                             android:contentDescription="Chọn ngày"
-                            android:padding="8dp" />
+                            android:padding="8dp"
+                            android:src="@drawable/ic_calendar" />
 
                     </LinearLayout>
 
@@ -162,86 +169,87 @@
                         android:id="@+id/rgGender"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginTop="0dp">
+                        android:layout_marginTop="0dp"
+                        android:orientation="horizontal">
 
                         <RadioButton
                             android:id="@+id/rbMale"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:buttonTint="#3A8DFF"
                             android:text="Male"
-                            android:textColor="#000"
-                            android:buttonTint="#3A8DFF" />
+                            android:textColor="#000" />
 
                         <RadioButton
                             android:id="@+id/rbFemale"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Female"
-                            android:textColor="#000"
                             android:layout_marginStart="12dp"
-                            android:buttonTint="#3A8DFF" />
+                            android:buttonTint="#3A8DFF"
+                            android:text="Female"
+                            android:textColor="#000" />
 
                     </RadioGroup>
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Email -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="Email"
                 android:textColor="#666"
-                android:textSize="13sp"
-                android:layout_marginTop="12dp" />
+                android:textSize="13sp" />
 
             <EditText
                 android:id="@+id/edtEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:backgroundTint="#CCCCCC"
+                android:inputType="textEmailAddress"
                 android:text="Abcd@gmail.com"
                 android:textColor="#000"
-                android:textSize="15sp"
-                android:inputType="textEmailAddress"
-                android:backgroundTint="#CCCCCC" />
+                android:textSize="15sp" />
 
-            <!-- Mobile -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="Mobile"
                 android:textColor="#666"
-                android:textSize="13sp"
-                android:layout_marginTop="12dp" />
+                android:textSize="13sp" />
 
             <EditText
                 android:id="@+id/edtMobile"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:backgroundTint="#CCCCCC"
+                android:inputType="phone"
                 android:text="+0123456789"
                 android:textColor="#000"
-                android:textSize="15sp"
-                android:inputType="phone"
-                android:backgroundTint="#CCCCCC" />
+                android:textSize="15sp" />
 
-            <!-- Address -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="Address"
                 android:textColor="#666"
-                android:textSize="13sp"
-                android:layout_marginTop="12dp" />
+                android:textSize="13sp" />
 
             <EditText
                 android:id="@+id/edtAddress"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:backgroundTint="#CCCCCC"
+                android:inputType="textMultiLine"
                 android:text="sjhyybgjkjkrnggggggggggggggggggggggggggggggggggggggggggggsn"
                 android:textColor="#000"
-                android:textSize="15sp"
-                android:inputType="textMultiLine"
-                android:backgroundTint="#CCCCCC" />
+                android:textSize="15sp" />
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="80dp"/>
 
         </LinearLayout>
     </ScrollView>
@@ -255,35 +263,36 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:layout_alignParentBottom="true"
             android:layout_marginHorizontal="15dp"
             android:layout_marginBottom="20dp"
+            android:orientation="horizontal"
             android:weightSum="2">
 
-            <!-- Nút Exit -->
             <Button
                 android:id="@+id/btnExit"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
                 android:layout_weight="1"
+                android:backgroundTint="#FFFFFF"
                 android:text="Exit"
+                android:textColor="#000000"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#FF5C5C"
-                android:layout_marginHorizontal="8dp" />
 
-            <!-- Nút Save -->
+                app:strokeColor="#D3B8EB"
+                app:strokeWidth="2dp" />
+
             <Button
                 android:id="@+id/btnSave"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
                 android:layout_weight="1"
+                android:backgroundTint="#D3B8EB"
                 android:text="Save"
-                android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#3A8DFF"
-                android:layout_marginHorizontal="8dp" />
+                android:textColor="#000000"
+                android:textStyle="bold" />
 
         </LinearLayout>
 

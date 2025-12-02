@@ -32,8 +32,8 @@ public class OTPVerificationActivity extends AppCompatActivity {
     private String recoveredEmail; // email để gửi lại OTP
 
     private OkHttpClient client = new OkHttpClient();
-    private static final String CHECK_TOKEN_URL = "http://163.61.110.132:4000/api/auth/check-reset-token";
-    private static final String FORGOT_PASSWORD_URL = "http://163.61.110.132:4000/api/auth/forgot-password";
+    private static final String CHECK_TOKEN_URL = "http://34.124.178.44:4000/api/auth/check-reset-token";
+    private static final String FORGOT_PASSWORD_URL = "http://34.124.178.44:4000/api/auth/forgot-password";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

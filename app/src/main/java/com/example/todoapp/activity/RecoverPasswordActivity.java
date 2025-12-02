@@ -31,7 +31,7 @@ public class RecoverPasswordActivity extends AppCompatActivity {
     private Button btnRecoverPassword;
 
     private OkHttpClient client = new OkHttpClient();
-    private static final String BASE_URL = "http://163.61.110.132:4000/api/auth/forgot-password";
+    private static final String BASE_URL = "http://34.124.178.44:4000/api/auth/forgot-password";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

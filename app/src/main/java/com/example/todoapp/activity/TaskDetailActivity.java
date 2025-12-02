@@ -42,8 +42,8 @@ public class TaskDetailActivity extends AppCompatActivity {
     private OkHttpClient client = new OkHttpClient();
     private Gson gson = new Gson();
 
-    private static final String UPDATE_SUBTASK_URL = "http://163.61.110.132:4000/api/subtask/";
-    private static final String UPDATE_TASK_URL_BASE = "http://163.61.110.132:4000/api/tasks/";
+    private static final String UPDATE_SUBTASK_URL = "http://34.124.178.44:4000/api/subtask/";
+    private static final String UPDATE_TASK_URL_BASE = "http://34.124.178.44:4000/api/tasks/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

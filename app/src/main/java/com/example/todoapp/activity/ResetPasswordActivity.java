@@ -34,7 +34,7 @@ public class ResetPasswordActivity extends AppCompatActivity {
     private String resetToken; // Nhận từ OTPVerificationActivity
 
     private OkHttpClient client = new OkHttpClient();
-    private static final String RESET_PASSWORD_URL = "http://163.61.110.132:4000/api/auth/reset-password";
+    private static final String RESET_PASSWORD_URL = "http://34.124.178.44:4000/api/auth/reset-password";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

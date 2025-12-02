@@ -15,10 +15,10 @@
         android:padding="12dp">
 
         <ImageView
-            android:id="@+id/btnMenu"
+            android:id="@+id/btnSort"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@drawable/ic_menu"
+            android:src="@drawable/ic_sort"
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"/>
 
@@ -27,7 +27,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/ic_search"
-            android:layout_toEndOf="@id/btnMenu"
+            android:layout_toEndOf="@id/btnSort"
             android:layout_marginStart="16dp"
             android:layout_centerVertical="true"/>
 
@@ -35,7 +35,7 @@
             android:id="@+id/layoutSearchInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_toEndOf="@id/btnMenu"
+            android:layout_toEndOf="@id/btnSort"
             android:layout_toStartOf="@id/btnAdd"
             android:layout_marginStart="10dp"
             android:layout_marginEnd="10dp"
@@ -136,7 +136,6 @@
             android:layout_marginStart="8dp"/>
     </LinearLayout>
 
-    <!-- Các nhãn với chấm màu ngay dưới tab filter -->
     <LinearLayout
         android:id="@+id/labelDots"
         android:layout_below="@id/tabFilters"
@@ -144,59 +143,66 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginTop="8dp"
-        android:layout_marginStart="16dp">
+        android:layout_marginStart="16dp"
+        android:baselineAligned="false">
 
-        <!-- Work -->
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:layout_marginEnd="32dp">
+            android:layout_marginEnd="24dp">
 
             <View
                 android:layout_width="12dp"
                 android:layout_height="12dp"
                 android:layout_marginEnd="6dp"
                 android:background="@drawable/dot_shape"
-                android:backgroundTint="#FFA500" />  <!-- Cam -->
-
-            <View
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:layout_marginEnd="6dp"
-                android:background="@drawable/dot_shape"
-                android:backgroundTint="#1976D2" />  <!-- Xanh dương -->
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Work"
-                android:textSize="16sp"
-                android:textColor="#212121"/>
+                android:backgroundTint="#FF5252" />  <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="High"
+            android:textSize="14sp"
+            android:textColor="#212121"/>
         </LinearLayout>
 
-        <!-- Personal -->
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:layout_marginEnd="32dp">
+            android:layout_marginEnd="24dp">
 
             <View
                 android:layout_width="12dp"
                 android:layout_height="12dp"
                 android:layout_marginEnd="6dp"
                 android:background="@drawable/dot_shape"
-                android:backgroundTint="#4CAF50" />  <!-- Xanh lá -->
+                android:backgroundTint="#AB47BC" />  <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Medium"
+            android:textSize="14sp"
+            android:textColor="#212121"/>
+        </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Personal"
-                android:textSize="16sp"
-                android:textColor="#212121"/>
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/dot_shape"
+                android:backgroundTint="#9E9E9E" />  <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Low"
+            android:textSize="14sp"
+            android:textColor="#212121"/>
         </LinearLayout>
     </LinearLayout>
 

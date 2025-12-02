@@ -18,8 +18,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.todoapp.R;
-
-// --- ĐÃ XÓA CÁC IMPORT CỦA FACEBOOK ---
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -44,7 +42,7 @@ public class LoginActivity extends AppCompatActivity {
     private EditText etAccount, etPassword;
     private Button btnSignIn;
     private TextView tvForgotPassword, tvSignUp;
-    private ImageView googleBtn, githubBtn; // Đổi tên từ facebookBtn thành githubBtn
+    private ImageView googleBtn, githubBtn;
     private CheckBox chkRememberMe;
 
     private boolean isPasswordVisible = false;
@@ -53,10 +51,9 @@ public class LoginActivity extends AppCompatActivity {
     private GoogleSignInClient gsc;
 
     private OkHttpClient client = new OkHttpClient();
-    private static final String SERVER_URL = "http://163.61.110.132:4000/api/auth/sign-in";
+    private static final String SERVER_URL = "http://34.124.178.44:4000/api/auth/sign-in";
 
     // --- CẤU HÌNH GITHUB ---
-    // Bạn hãy lấy Client ID từ trang Github Developer Settings dán vào đây
     private static final String GITHUB_CLIENT_ID = "Ov23linN6K2PUJKdvuVQ";
     private static final String GITHUB_REDIRECT_URI = "todoapp://callback";
     private static final String GITHUB_AUTH_URL = "https://github.com/login/oauth/authorize";
@@ -85,17 +82,19 @@ public class LoginActivity extends AppCompatActivity {
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         tvSignUp = findViewById(R.id.tvSignUp);
         googleBtn = findViewById(R.id.google_logo);
-        githubBtn = findViewById(R.id.github_logo); // Ánh xạ nút Github (lưu ý ID trong XML phải là github_logo)
+        githubBtn = findViewById(R.id.github_logo);
         chkRememberMe = findViewById(R.id.chkRememberMe);
 
         // --- XỬ LÝ ẨN/HIỆN MẬT KHẨU ---
         etPassword.setOnTouchListener((v, event) -> {
             final int DRAWABLE_RIGHT = 2;
             if (event.getAction() == MotionEvent.ACTION_UP) {
-                int iconWidth = etPassword.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width();
-                if (event.getX() >= (etPassword.getWidth() - etPassword.getPaddingEnd() - iconWidth)) {
-                    togglePasswordVisibility();
-                    return true;
+                if (etPassword.getCompoundDrawables()[DRAWABLE_RIGHT] != null) { // Check null tránh crash
+                    int iconWidth = etPassword.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width();
+                    if (event.getX() >= (etPassword.getWidth() - etPassword.getPaddingEnd() - iconWidth)) {
+                        togglePasswordVisibility();
+                        return true;
+                    }
                 }
             }
             return false;
@@ -108,10 +107,9 @@ public class LoginActivity extends AppCompatActivity {
         tvSignUp.setOnClickListener(v -> startActivity(new Intent(this, RegisterActivity.class)));
 
         setupGoogleSignIn();
-        setupGithubSignIn(); // Thiết lập Github
+        setupGithubSignIn();
     }
 
-    // Hàm hỗ trợ để bắt Intent khi Activity chạy ngầm (SingleTask/SingleTop)
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -119,7 +117,6 @@ public class LoginActivity extends AppCompatActivity {
         processGithubCallback(intent);
     }
 
-    // --- LOGIC XỬ LÝ GITHUB CALLBACK ---
     private void processGithubCallback(Intent intent) {
         if (intent != null && intent.getData() != null) {
             Uri data = intent.getData();
@@ -132,10 +129,8 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    // ------------------------- GITHUB LOGIN -------------------------
     private void setupGithubSignIn() {
         githubBtn.setOnClickListener(v -> {
-            // Tạo URL để mở trình duyệt
             String url = GITHUB_AUTH_URL + "?client_id=" + GITHUB_CLIENT_ID + "&redirect_uri=" + GITHUB_REDIRECT_URI + "&scope=user:email";
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             startActivity(intent);
@@ -143,19 +138,10 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void handleGithubAuthCode(String code) {
-        // Có CODE từ Github.
-        // Bước tiếp theo: Gửi CODE này lên Backend Node.js của bạn.
-        // Backend sẽ dùng Code + ClientSecret để đổi lấy AccessToken thật từ Github.
-
         Toast.makeText(this, "Github Authorized! Code: " + code, Toast.LENGTH_SHORT).show();
-
-        // TẠM THỜI: Giả lập đăng nhập thành công để bạn test luồng App
-        // (Sau này bạn cần viết API gọi lên server ở đây giống hàm handleAppSignIn)
 
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
-
-        // Lưu dữ liệu giả để vào được Main
         editor.putString("accessToken", "github_mock_token_" + code);
         editor.putString("username", "Github User");
         editor.putString("email", "github@example.com");
@@ -164,7 +150,6 @@ public class LoginActivity extends AppCompatActivity {
         navigateToMainActivity();
     }
 
-    // ------------------------- APP LOGIN -------------------------
     private void handleAppSignIn() {
         String account = etAccount.getText().toString().trim();
         String password = etPassword.getText().toString();
@@ -202,8 +187,6 @@ public class LoginActivity extends AppCompatActivity {
 
                 @Override
                 public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                    assert response.body() != null;
-                    String res = response.body().string();
                     if (!response.isSuccessful()) {
                         runOnUiThread(() ->
                                 Toast.makeText(LoginActivity.this, "Login failed.", Toast.LENGTH_SHORT).show()
@@ -212,12 +195,17 @@ public class LoginActivity extends AppCompatActivity {
                     }
 
                     try {
+                        String res = response.body().string();
                         JSONObject obj = new JSONObject(res);
-                        JSONObject user = obj.getJSONObject("user");
+
+                        // Cấu trúc JSON trả về: { accessToken: "...", refreshToken: "...", user: { ... } }
                         String accessToken = obj.getString("accessToken");
                         String refreshToken = obj.getString("refreshToken");
+                        JSONObject user = obj.getJSONObject("user");
 
+                        // Lưu session và xử lý Remember Me
                         saveUserSession(user, accessToken, refreshToken, account, password);
+
                         runOnUiThread(LoginActivity.this::navigateToMainActivity);
 
                     } catch (Exception e) {
@@ -233,18 +221,27 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
+    // --- HÀM LƯU SESSION ĐÃ CẬP NHẬT ---
     private void saveUserSession(JSONObject user, String accessToken, String refreshToken, String rawAccount, String rawPassword) {
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
 
+        // 1. Lưu Token
         editor.putString("accessToken", accessToken != null ? accessToken : "");
         editor.putString("refreshToken", refreshToken != null ? refreshToken : "");
 
-        editor.putString("user_id", user.optString("user_id", ""));
+        // 2. Lưu thông tin User (Quan trọng cho ViewAccountActivity)
+        editor.putString("user_id", String.valueOf(user.optInt("user_id", 0)));
         editor.putString("username", user.optString("username", ""));
-        // ... (Các trường user khác)
+        editor.putString("email", user.optString("email", ""));
+        editor.putString("phone_number", user.optString("phone_number", ""));
+        editor.putString("address", user.optString("address", ""));
 
-        // XỬ LÝ REMEMBER ME
+        // Lưu ngày sinh và avatar (nếu có)
+        editor.putString("birthday", user.optString("birthday", ""));
+        editor.putString("avatar_url", user.optString("avatar_url", ""));
+
+        // 3. Xử lý Remember Me
         if (chkRememberMe.isChecked()) {
             editor.putBoolean("isRemembered", true);
             editor.putString("savedAccount", rawAccount);
@@ -284,7 +281,6 @@ public class LoginActivity extends AppCompatActivity {
         etPassword.setSelection(etPassword.getText().length());
     }
 
-    // ------------------------- GOOGLE LOGIN -------------------------
     private void setupGoogleSignIn() {
         gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
@@ -309,7 +305,7 @@ public class LoginActivity extends AppCompatActivity {
                 SharedPreferences.Editor editor = sp.edit();
                 editor.putString("username", account.getDisplayName());
                 editor.putString("email", account.getEmail());
-                editor.putString("accessToken", "google");
+                editor.putString("accessToken", "google_token"); // Token giả lập
                 editor.apply();
 
                 navigateToMainActivity();

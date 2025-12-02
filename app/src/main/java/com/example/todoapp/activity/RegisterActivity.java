@@ -43,7 +43,7 @@ public class RegisterActivity extends AppCompatActivity {
     private GoogleSignInClient gsc;
 
     private OkHttpClient client = new OkHttpClient();
-    private static final String SERVER_URL = "http://163.61.110.132:4000/api/auth/sign-up";
+    private static final String SERVER_URL = "http://34.124.178.44:4000/api/auth/sign-up";
 
     // --- CẤU HÌNH GITHUB (Copy Client ID thật của bạn vào đây) ---
     private static final String GITHUB_CLIENT_ID = "YOUR_GITHUB_CLIENT_ID_HERE";

@@ -15,14 +15,6 @@
         android:layout_height="wrap_content"
         android:padding="12dp">
 
-        <ImageView
-            android:id="@+id/btnBack"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_menu"
-            android:layout_alignParentStart="true"
-            app:tint="@color/bottom_nav_icon_color" />
-
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="wrap_content"

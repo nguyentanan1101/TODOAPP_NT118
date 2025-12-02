@@ -2,7 +2,10 @@ package com.example.todoapp.activity;
 
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -18,11 +21,23 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.todoapp.R;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class AddTaskActivity extends AppCompatActivity {
 
@@ -45,6 +60,9 @@ public class AddTaskActivity extends AppCompatActivity {
     private Calendar startCal = Calendar.getInstance();
     private Calendar endCal = Calendar.getInstance();
 
+    private OkHttpClient client = new OkHttpClient();
+    private static final String CREATE_TASK_URL = "http://34.124.178.44:4000/api/tasks/create";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,164 +70,129 @@ public class AddTaskActivity extends AppCompatActivity {
 
         initViews();
         setupListeners();
+        setDefaultDate();
         setupSpinners();
 
+        // Cài đặt validate nhập liệu ngày tháng
         setupDateInputValidation(etStartDay, etStartMonth, etStartYear);
         setupDateInputValidation(etEndDay, etEndMonth, etEndYear);
 
+        addSubtaskRow();
     }
 
+    // --- LOGIC VALIDATE NGÀY THÁNG AN TOÀN ---
     private void setupDateInputValidation(EditText etDay, EditText etMonth, EditText etYear) {
-        etMonth.setOnFocusChangeListener((v, hasFocus) -> {
+        View.OnFocusChangeListener listener = (v, hasFocus) -> {
             if (!hasFocus) {
-                String val = etMonth.getText().toString().trim();
-                if (!val.isEmpty()) {
-                    int m = Integer.parseInt(val);
-                    if (m < 1) m = 1;
-                    if (m > 12) m = 12;
-                    etMonth.setText(String.format(Locale.getDefault(), "%02d", m));
-
-                    validateDay(etDay, etMonth, etYear);
-                }
+                validateDateFields(etDay, etMonth, etYear);
             }
-        });
+        };
 
-        etDay.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                validateDay(etDay, etMonth, etYear);
-            }
-        });
-
-        etYear.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                String val = etYear.getText().toString().trim();
-                if (!val.isEmpty() && val.length() == 4) {
-                    validateDay(etDay, etMonth, etYear);
-                }
-            }
-        });
+        etDay.setOnFocusChangeListener(listener);
+        etMonth.setOnFocusChangeListener(listener);
+        etYear.setOnFocusChangeListener(listener);
     }
 
-    private void validateDay(EditText etDay, EditText etMonth, EditText etYear) {
+    private void validateDateFields(EditText etDay, EditText etMonth, EditText etYear) {
         String dStr = etDay.getText().toString().trim();
         String mStr = etMonth.getText().toString().trim();
         String yStr = etYear.getText().toString().trim();
 
-        if (dStr.isEmpty() || mStr.isEmpty() || yStr.isEmpty()) return;
+        if (dStr.isEmpty() && mStr.isEmpty()) return; // Chưa nhập gì thì bỏ qua
 
-        int d = Integer.parseInt(dStr);
-        int m = Integer.parseInt(mStr);
-        int y = Integer.parseInt(yStr);
+        try {
+            int d = dStr.isEmpty() ? 1 : Integer.parseInt(dStr);
+            int m = mStr.isEmpty() ? 1 : Integer.parseInt(mStr);
+            // Nếu năm chưa nhập đủ 4 số, lấy năm hiện tại để check ngày hợp lệ
+            int y = (yStr.length() < 4) ? Calendar.getInstance().get(Calendar.YEAR) : Integer.parseInt(yStr);
 
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.YEAR, y);
-        cal.set(Calendar.MONTH, m - 1);
-        cal.set(Calendar.DAY_OF_MONTH, 1);
+            // 1. Validate Tháng
+            if (m < 1) m = 1;
+            if (m > 12) m = 12;
 
-        int maxDay = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+            // 2. Validate Ngày theo Tháng/Năm
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.YEAR, y);
+            cal.set(Calendar.MONTH, m - 1);
+            cal.set(Calendar.DAY_OF_MONTH, 1);
+            int maxDay = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-        if (d < 1) d = 1;
-        if (d > maxDay) d = maxDay;
+            if (d < 1) d = 1;
+            if (d > maxDay) d = maxDay;
 
-        etDay.setText(String.format(Locale.getDefault(), "%02d", d));
+            // 3. Update lại UI (thêm số 0 nếu cần)
+            if (!dStr.isEmpty()) etDay.setText(String.format(Locale.getDefault(), "%02d", d));
+            if (!mStr.isEmpty()) etMonth.setText(String.format(Locale.getDefault(), "%02d", m));
+
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        }
     }
 
-    private void setDefaultDate() {
-        Calendar today = Calendar.getInstance();
-        String currentDay = String.format(Locale.getDefault(), "%02d", today.get(Calendar.DAY_OF_MONTH));
-        String currentMonth = String.format(Locale.getDefault(), "%02d", today.get(Calendar.MONTH) + 1);
-        String currentYear = String.valueOf(today.get(Calendar.YEAR));
+    // --- API CALL ---
+    private void createNewTask(String title, String startDate, String endDate, String priority, String reminder, String note, List<String> subtasks) {
+        SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+        String accessToken = sp.getString("accessToken", "");
 
-        etStartDay.setText(currentDay); etStartMonth.setText(currentMonth); etStartYear.setText(currentYear);
-        etEndDay.setText(currentDay); etEndMonth.setText(currentMonth); etEndYear.setText(currentYear);
-    }
+        if (accessToken.isEmpty()) {
+            Toast.makeText(this, "Bạn chưa đăng nhập!", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-    private void initViews() {
-        btnBack = findViewById(R.id.btnBack);
-        btnSave = findViewById(R.id.btnSave);
-        etTitle = findViewById(R.id.etTitle);
-        etNotes = findViewById(R.id.etNotes);
+        try {
+            JSONObject jsonBody = new JSONObject();
+            jsonBody.put("title", title);
+            jsonBody.put("description", note);
+            jsonBody.put("start_date", startDate);
+            jsonBody.put("due_date", endDate);
+            jsonBody.put("priority", priority);
+            jsonBody.put("reminder", reminder);
+            jsonBody.put("status", "ToDo");
 
-        btnPickStartDate = findViewById(R.id.btnPickStartDate);
-        btnPickEndDate = findViewById(R.id.btnPickEndDate);
+            JSONArray subtaskArray = new JSONArray();
+            for (String subName : subtasks) {
+                JSONObject subObj = new JSONObject();
+                subObj.put("subtask_name", subName);
+                subObj.put("subtask_status", "ToDo");
+                subtaskArray.put(subObj);
+            }
+            jsonBody.put("subtasks", subtaskArray);
 
-        etStartDay = findViewById(R.id.etStartDay); etStartMonth = findViewById(R.id.etStartMonth); etStartYear = findViewById(R.id.etStartYear);
-        etEndDay = findViewById(R.id.etEndDay); etEndMonth = findViewById(R.id.etEndMonth); etEndYear = findViewById(R.id.etEndYear);
+            RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.get("application/json; charset=utf-8"));
 
-        containerSubtasks = findViewById(R.id.containerSubtasks);
-        btnAddSubtask = findViewById(R.id.btnAddSubtask);
+            Request request = new Request.Builder()
+                    .url(CREATE_TASK_URL)
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .post(body)
+                    .build();
 
-        spinnerReminder = findViewById(R.id.spinnerReminder);
-        spinnerPriority = findViewById(R.id.spinnerPriority);
-        tvSelectedTime = findViewById(R.id.tvSelectedTime);
-    }
-
-    private void setupSpinners() {
-        String[] reminderOptions = {"None", "5 minutes before", "10 minutes before", "30 minutes before", "1 hour before", "1 day before", "Custom"};
-        ArrayAdapter<String> reminderAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, reminderOptions);
-        reminderAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerReminder.setAdapter(reminderAdapter);
-
-        spinnerReminder.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                selectedReminderOption = reminderOptions[position];
-                if (selectedReminderOption.equals("Custom")) {
-                    showCustomReminderPicker();
-                } else {
-                    tvSelectedTime.setVisibility(View.GONE);
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    runOnUiThread(() -> Toast.makeText(AddTaskActivity.this, "Lỗi kết nối server", Toast.LENGTH_SHORT).show());
                 }
-            }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
 
-        String[] priorityOptions = {"Low", "Medium", "High", "Critical"};
-        ArrayAdapter<String> priorityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, priorityOptions);
-        priorityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerPriority.setAdapter(priorityAdapter);
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    String resStr = response.body().string();
+                    if (response.isSuccessful()) {
+                        runOnUiThread(() -> {
+                            Toast.makeText(AddTaskActivity.this, "Tạo task thành công!", Toast.LENGTH_SHORT).show();
+                            finish();
+                        });
+                    } else {
+                        Log.e("API_ERROR", "Code: " + response.code() + " - " + resStr);
+                        runOnUiThread(() -> Toast.makeText(AddTaskActivity.this, "Lỗi tạo task: " + response.code(), Toast.LENGTH_SHORT).show());
+                    }
+                }
+            });
 
-        spinnerPriority.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                selectedPriority = priorityOptions[position];
-            }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    private void showCustomReminderPicker() {
-        DatePickerDialog dateDialog = new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
-            customReminderCal.set(Calendar.YEAR, year);
-            customReminderCal.set(Calendar.MONTH, month);
-            customReminderCal.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-            showTimePickerForCustom();
-        }, customReminderCal.get(Calendar.YEAR), customReminderCal.get(Calendar.MONTH), customReminderCal.get(Calendar.DAY_OF_MONTH));
-
-        dateDialog.setOnCancelListener(dialog -> spinnerReminder.setSelection(0));
-        dateDialog.show();
-    }
-
-    private void showTimePickerForCustom() {
-        TimePickerDialog timeDialog = new TimePickerDialog(this, (view, hourOfDay, minute) -> {
-            customReminderCal.set(Calendar.HOUR_OF_DAY, hourOfDay);
-            customReminderCal.set(Calendar.MINUTE, minute);
-            customReminderCal.set(Calendar.SECOND, 0);
-            updateCustomTimeText();
-        }, customReminderCal.get(Calendar.HOUR_OF_DAY), customReminderCal.get(Calendar.MINUTE), true);
-
-        timeDialog.setOnCancelListener(dialog -> spinnerReminder.setSelection(0));
-        timeDialog.show();
-    }
-
-    private void updateCustomTimeText() {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-        String formattedTime = sdf.format(customReminderCal.getTime());
-        tvSelectedTime.setText("Alarm: " + formattedTime + " (Tap to edit)");
-        tvSelectedTime.setVisibility(View.VISIBLE);
-    }
-
+    // --- SETUP LISTENERS ---
     private void setupListeners() {
         btnBack.setOnClickListener(v -> finish());
 
@@ -226,36 +209,100 @@ public class AddTaskActivity extends AppCompatActivity {
                 return;
             }
 
-            validateDay(etStartDay, etStartMonth, etStartYear);
-            validateDay(etEndDay, etEndMonth, etEndYear);
+            // Validate lần cuối
+            validateDateFields(etStartDay, etStartMonth, etStartYear);
+            validateDateFields(etEndDay, etEndMonth, etEndYear);
 
             String startDate = getSelectedDate(etStartDay, etStartMonth, etStartYear);
             String endDate = getSelectedDate(etEndDay, etEndMonth, etEndYear);
             List<String> subtasks = getSubtaskListFromUI();
+            String note = etNotes.getText().toString().trim();
 
-            String finalReminderValue = selectedReminderOption;
+            String finalReminder = selectedReminderOption;
             if (selectedReminderOption.equals("Custom")) {
                 SimpleDateFormat sdfSave = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-                finalReminderValue = sdfSave.format(customReminderCal.getTime());
+                finalReminder = sdfSave.format(customReminderCal.getTime());
             }
 
-            String msg = "Saved!\n" +
-                    "Title: " + title + "\n" +
-                    "Start: " + startDate + "\n" +
-                    "End: " + endDate;
-
-            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
-            finish();
+            createNewTask(title, startDate, endDate, selectedPriority, finalReminder, note, subtasks);
         });
     }
 
-    private void showDatePicker(Calendar calendar, EditText etDay, EditText etMonth, EditText etYear) {
-        DatePickerDialog dialog = new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
-            calendar.set(Calendar.YEAR, year);
-            calendar.set(Calendar.MONTH, month);
-            calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+    // --- HELPER FUNCTIONS ---
+    private void setDefaultDate() {
+        Calendar today = Calendar.getInstance();
+        String d = String.format(Locale.getDefault(), "%02d", today.get(Calendar.DAY_OF_MONTH));
+        String m = String.format(Locale.getDefault(), "%02d", today.get(Calendar.MONTH) + 1);
+        String y = String.valueOf(today.get(Calendar.YEAR));
+        etStartDay.setText(d); etStartMonth.setText(m); etStartYear.setText(y);
+        etEndDay.setText(d); etEndMonth.setText(m); etEndYear.setText(y);
+    }
 
-            etDay.setText(String.format(Locale.getDefault(), "%02d", dayOfMonth));
+    private void initViews() {
+        btnBack = findViewById(R.id.btnBack); btnSave = findViewById(R.id.btnSave);
+        etTitle = findViewById(R.id.etTitle); etNotes = findViewById(R.id.etNotes);
+        btnPickStartDate = findViewById(R.id.btnPickStartDate); btnPickEndDate = findViewById(R.id.btnPickEndDate);
+
+        etStartDay = findViewById(R.id.etStartDay); etStartMonth = findViewById(R.id.etStartMonth); etStartYear = findViewById(R.id.etStartYear);
+        etEndDay = findViewById(R.id.etEndDay); etEndMonth = findViewById(R.id.etEndMonth); etEndYear = findViewById(R.id.etEndYear);
+
+        containerSubtasks = findViewById(R.id.containerSubtasks); btnAddSubtask = findViewById(R.id.btnAddSubtask);
+        spinnerReminder = findViewById(R.id.spinnerReminder); spinnerPriority = findViewById(R.id.spinnerPriority);
+        tvSelectedTime = findViewById(R.id.tvSelectedTime);
+    }
+
+    private void setupSpinners() {
+        String[] reminderOptions = {"None", "5 minutes", "10 minutes", "30 minutes", "1 hour", "1 day", "Custom"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, reminderOptions);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerReminder.setAdapter(adapter);
+        spinnerReminder.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
+                selectedReminderOption = reminderOptions[pos];
+                if (selectedReminderOption.equals("Custom")) showCustomReminderPicker();
+                else tvSelectedTime.setVisibility(View.GONE);
+            }
+            @Override public void onNothingSelected(AdapterView<?> p) {}
+        });
+
+        String[] priorityOptions = {"Low", "Medium", "High", "Critical"};
+        ArrayAdapter<String> pAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, priorityOptions);
+        pAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerPriority.setAdapter(pAdapter);
+        spinnerPriority.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) { selectedPriority = priorityOptions[pos]; }
+            @Override public void onNothingSelected(AdapterView<?> p) {}
+        });
+    }
+
+    private void showCustomReminderPicker() {
+        DatePickerDialog dateDialog = new DatePickerDialog(this, (view, year, month, day) -> {
+            customReminderCal.set(Calendar.YEAR, year); customReminderCal.set(Calendar.MONTH, month); customReminderCal.set(Calendar.DAY_OF_MONTH, day);
+            showTimePickerForCustom();
+        }, customReminderCal.get(Calendar.YEAR), customReminderCal.get(Calendar.MONTH), customReminderCal.get(Calendar.DAY_OF_MONTH));
+        dateDialog.setOnCancelListener(d -> spinnerReminder.setSelection(0));
+        dateDialog.show();
+    }
+
+    private void showTimePickerForCustom() {
+        TimePickerDialog timeDialog = new TimePickerDialog(this, (view, hour, minute) -> {
+            customReminderCal.set(Calendar.HOUR_OF_DAY, hour); customReminderCal.set(Calendar.MINUTE, minute);
+            updateCustomTimeText();
+        }, customReminderCal.get(Calendar.HOUR_OF_DAY), customReminderCal.get(Calendar.MINUTE), true);
+        timeDialog.setOnCancelListener(d -> spinnerReminder.setSelection(0));
+        timeDialog.show();
+    }
+
+    private void updateCustomTimeText() {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+        tvSelectedTime.setText("Alarm: " + sdf.format(customReminderCal.getTime()) + " (Tap to edit)");
+        tvSelectedTime.setVisibility(View.VISIBLE);
+    }
+
+    private void showDatePicker(Calendar calendar, EditText etDay, EditText etMonth, EditText etYear) {
+        DatePickerDialog dialog = new DatePickerDialog(this, (view, year, month, day) -> {
+            calendar.set(Calendar.YEAR, year); calendar.set(Calendar.MONTH, month); calendar.set(Calendar.DAY_OF_MONTH, day);
+            etDay.setText(String.format(Locale.getDefault(), "%02d", day));
             etMonth.setText(String.format(Locale.getDefault(), "%02d", month + 1));
             etYear.setText(String.valueOf(year));
         }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH));
@@ -266,6 +313,8 @@ public class AddTaskActivity extends AppCompatActivity {
         String d = etDay.getText().toString().trim();
         String m = etMonth.getText().toString().trim();
         String y = etYear.getText().toString().trim();
+        if (d.length() == 1) d = "0" + d;
+        if (m.length() == 1) m = "0" + m;
         return y + "-" + m + "-" + d;
     }
 
