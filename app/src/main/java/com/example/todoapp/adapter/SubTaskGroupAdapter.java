@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -21,56 +22,74 @@ public class SubTaskGroupAdapter extends RecyclerView.Adapter<SubTaskGroupAdapte
     private Context context;
     private List<SubTaskGroup> groups;
 
-    public interface OnSubTaskCheckedChangeListener {
-        void onCheckedChanged(SubTaskModel subTask, boolean isChecked);
-    }
-
-    private OnSubTaskCheckedChangeListener listener;
-
-    public void setOnSubTaskCheckedChangeListener(OnSubTaskCheckedChangeListener listener) {
-        this.listener = listener;
-    }
+    // Pool dùng chung để tái sử dụng view giữa các recyclerview con -> Tăng hiệu năng cuộn
+    private RecyclerView.RecycledViewPool viewPool = new RecyclerView.RecycledViewPool();
 
     public SubTaskGroupAdapter(Context context, List<SubTaskGroup> groups) {
         this.context = context;
         this.groups = groups;
     }
 
-    // Lấy tất cả subtask để gửi lên server
+    /**
+     * Hàm quan trọng: Gom tất cả subtask từ các nhóm lại thành 1 list phẳng.
+     * Vì các adapter con đã cập nhật trực tiếp vào model object,
+     * nên list này sẽ chứa trạng thái isDone mới nhất.
+     */
     public List<SubTaskModel> getAllSubTasks() {
         List<SubTaskModel> all = new ArrayList<>();
-        for (SubTaskGroup group : groups) {
-            all.addAll(group.getSubTasks());
+        if (groups != null) {
+            for (SubTaskGroup group : groups) {
+                if (group.getSubTasks() != null) {
+                    all.addAll(group.getSubTasks());
+                }
+            }
         }
         return all;
     }
 
+    @NonNull
     @Override
-    public GroupViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public GroupViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(context).inflate(R.layout.item_subtask_group, parent, false);
         return new GroupViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(GroupViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull GroupViewHolder holder, int position) {
         SubTaskGroup group = groups.get(position);
+
+        // 1. Hiển thị tiêu đề nhóm (Today, Tomorrow...)
         holder.tvGroupTitle.setText(group.getDueLabel());
 
-        // Adapter con cho các subtask trong nhóm
-        SubTaskAdapter adapter = new SubTaskAdapter(context, group.getSubTasks());
-        holder.recyclerSubTasks.setLayoutManager(new LinearLayoutManager(context));
-        holder.recyclerSubTasks.setAdapter(adapter);
+        // 2. Cấu hình LayoutManager cho RecyclerView con
+        LinearLayoutManager layoutManager = new LinearLayoutManager(
+                holder.recyclerSubTasks.getContext(),
+                LinearLayoutManager.VERTICAL,
+                false
+        );
 
-        // Gắn listener để thay đổi trạng thái local khi tick checkbox
-        adapter.setOnSubTaskCheckedChangeListener((subTask, isChecked) -> {
-            subTask.setDone(isChecked); // cập nhật trạng thái local
-            if (listener != null) listener.onCheckedChanged(subTask, isChecked);
+        // Tối ưu: Cho biết trước số lượng item để Android vẽ nhanh hơn
+        layoutManager.setInitialPrefetchItemCount(group.getSubTasks().size());
+
+        // 3. Tạo Adapter cho danh sách con
+        SubTaskAdapter subTaskAdapter = new SubTaskAdapter(context, group.getSubTasks());
+
+        holder.recyclerSubTasks.setLayoutManager(layoutManager);
+        holder.recyclerSubTasks.setAdapter(subTaskAdapter);
+        holder.recyclerSubTasks.setRecycledViewPool(viewPool); // Chia sẻ pool
+
+        // 4. Lắng nghe sự kiện tick từ Adapter con
+        // Khi user tick, ta cập nhật ngay vào Model
+        subTaskAdapter.setOnSubTaskCheckedChangeListener((subTask, isChecked) -> {
+            subTask.setDone(isChecked);
+            // Không cần làm gì thêm, vì khi bấm nút TICK ở Activity,
+            // hàm getAllSubTasks() sẽ lấy được dữ liệu đã update này.
         });
     }
 
     @Override
     public int getItemCount() {
-        return groups.size();
+        return groups != null ? groups.size() : 0;
     }
 
     static class GroupViewHolder extends RecyclerView.ViewHolder {
@@ -80,6 +99,7 @@ public class SubTaskGroupAdapter extends RecyclerView.Adapter<SubTaskGroupAdapte
         GroupViewHolder(View itemView) {
             super(itemView);
             tvGroupTitle = itemView.findViewById(R.id.tvGroupTitle);
+            // Đảm bảo ID này khớp với file item_subtask_group.xml
             recyclerSubTasks = itemView.findViewById(R.id.recyclerSubTasksInner);
         }
     }

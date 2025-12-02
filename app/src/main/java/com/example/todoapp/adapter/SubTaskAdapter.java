@@ -1,6 +1,7 @@
 package com.example.todoapp.adapter;
 
 import android.content.Context;
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,7 +21,6 @@ public class SubTaskAdapter extends RecyclerView.Adapter<SubTaskAdapter.ViewHold
     private final Context context;
     private final List<SubTaskModel> subTasks;
 
-    // Listener để callback khi checkbox thay đổi
     public interface OnSubTaskCheckedChangeListener {
         void onCheckedChanged(SubTaskModel subTask, boolean isChecked);
     }
@@ -47,19 +47,42 @@ public class SubTaskAdapter extends RecyclerView.Adapter<SubTaskAdapter.ViewHold
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         SubTaskModel subTask = subTasks.get(position);
 
-        // Hiển thị tên subtask
+        // 1. Hiển thị tên
         holder.tvTitle.setText(subTask.getTitle() != null ? subTask.getTitle() : "");
 
-        // Đặt trạng thái checkbox theo subTask.isDone()
+        // 2. QUAN TRỌNG: Gỡ bỏ listener cũ trước khi setChecked để tránh xung đột
+        holder.checkbox.setOnCheckedChangeListener(null);
+
+        // 3. Đặt trạng thái checkbox từ Model
         holder.checkbox.setChecked(subTask.isDone());
 
-        // Listener khi checkbox thay đổi
+        // 4. Xử lý hiệu ứng gạch ngang chữ nếu đã hoàn thành
+        updateStrikeThrough(holder.tvTitle, subTask.isDone());
+
+        // 5. Gán listener mới
         holder.checkbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            subTask.setDone(isChecked); // cập nhật trạng thái local
+            // Cập nhật ngay vào Model
+            subTask.setDone(isChecked);
+
+            // Cập nhật hiệu ứng gạch ngang chữ ngay lập tức
+            updateStrikeThrough(holder.tvTitle, isChecked);
+
+            // Gửi callback (nếu có)
             if (listener != null) {
-                listener.onCheckedChanged(subTask, isChecked); // callback lên GroupAdapter hoặc Activity
+                listener.onCheckedChanged(subTask, isChecked);
             }
         });
+    }
+
+    // Hàm phụ trợ để gạch ngang chữ
+    private void updateStrikeThrough(TextView tv, boolean isDone) {
+        if (isDone) {
+            tv.setPaintFlags(tv.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            tv.setAlpha(0.5f); // Làm mờ đi một chút
+        } else {
+            tv.setPaintFlags(tv.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+            tv.setAlpha(1.0f); // Hiện rõ lại
+        }
     }
 
     @Override
@@ -73,8 +96,9 @@ public class SubTaskAdapter extends RecyclerView.Adapter<SubTaskAdapter.ViewHold
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
+            // Đảm bảo ID này khớp với file xml item_subtask.xml
             tvTitle = itemView.findViewById(R.id.tvSubTaskTitle);
-            checkbox = itemView.findViewById(R.id.chkSubtask); // trong layout item_subtask.xml
+            checkbox = itemView.findViewById(R.id.chkSubtask);
         }
     }
 }

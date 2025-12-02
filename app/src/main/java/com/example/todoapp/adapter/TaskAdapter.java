@@ -55,42 +55,50 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         TaskModel task = taskList.get(position);
 
-        // --- HIỂN THỊ LOẠI TASK (Tiêu đề lớn) ---
-        String typeLabel = "";
-        String colorCode = "#FFFFFF";
+        // --- 1. HIỂN THỊ LOẠI TASK & MÀU SẮC ---
+        String typeLabel = "Task";
+        String colorCode = "#FFFFFF"; // Mặc định trắng
 
-        switch(task.getType()) {
-            case PERSONAL:
-                typeLabel = "Personal";
-                colorCode = "#A5D6A7";  // Xanh lá Pastel
-                break;
-            case WORK_PRIVATE:
-                typeLabel = "Work";
-                colorCode = "#FFE082";  // Vàng Pastel
-                break;
-            case WORK_GROUP:
-                typeLabel = "Team";
-                colorCode = "#90CAF9";  // Xanh dương Pastel
-                break;
+        if (task.getType() != null) {
+            switch (task.getType()) {
+                case PERSONAL:
+                    typeLabel = "Personal";
+                    colorCode = "#A5D6A7"; // Màu Xanh Lá (Pastel)
+                    break;
+                case WORK_PRIVATE:
+                case WORK_GROUP:
+                    // Gom cả 2 loại Work lại hiển thị chung
+                    typeLabel = "Work";
+                    colorCode = "#FFE082"; // Màu Vàng (Pastel)
+                    break;
+                default:
+                    typeLabel = "Other";
+                    colorCode = "#EEEEEE";
+                    break;
+            }
         }
 
+        // Set Text và Màu nền
         holder.tvTaskType.setText(typeLabel);
         holder.cardView.setCardBackgroundColor(Color.parseColor(colorCode));
 
-        // --- HIỂN THỊ TÊN TASK (Dòng nhỏ bên dưới) ---
+        // --- 2. HIỂN THỊ TÊN TASK ---
         holder.tvTaskName.setText(task.getTitle() != null ? task.getTitle() : "");
 
-
-        // --- NÚT DELETE ---
-        holder.btnDelete.setVisibility(task.getType() == TaskModel.TaskType.PERSONAL ? View.VISIBLE : View.GONE);
-        holder.btnDelete.setOnClickListener(v -> {
-            int pos = holder.getAdapterPosition();
-            if(pos != RecyclerView.NO_POSITION) {
-                taskList.remove(pos);
-                notifyItemRemoved(pos);
-                notifyItemRangeChanged(pos, taskList.size());
-            }
-        });
+        // --- 3. NÚT DELETE (Chỉ hiện cho Personal) ---
+        if (task.getType() == TaskModel.TaskType.PERSONAL) {
+            holder.btnDelete.setVisibility(View.VISIBLE);
+            holder.btnDelete.setOnClickListener(v -> {
+                int pos = holder.getAdapterPosition();
+                if(pos != RecyclerView.NO_POSITION) {
+                    taskList.remove(pos);
+                    notifyItemRemoved(pos);
+                    notifyItemRangeChanged(pos, taskList.size());
+                }
+            });
+        } else {
+            holder.btnDelete.setVisibility(View.GONE);
+        }
 
         // --- 4. HIỂN THỊ DANH SÁCH SUBTASK ---
         holder.subtaskContainer.removeAllViews();
@@ -115,6 +123,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 params.setMargins(0, 4, 0, 4);
                 tv.setLayoutParams(params);
 
+                // Gạch ngang nếu xong
                 if (sub.isDone()) {
                     tv.setPaintFlags(tv.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                     tv.setAlpha(0.6f);
@@ -125,13 +134,16 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
 
         // --- 5. TRẠNG THÁI HOÀN THÀNH ---
-        if(task.isDone() && task.getCompletedDate() != null && !task.getCompletedDate().isEmpty()) {
+        if(task.isDone()) {
             holder.tvCompleted.setVisibility(View.VISIBLE);
-            holder.tvCompleted.setText("Done: " + task.getCompletedDate());
+            // Kiểm tra null để tránh lỗi hiển thị "null"
+            String date = task.getCompletedDate() != null ? task.getCompletedDate() : "Just now";
+            holder.tvCompleted.setText("Done: " + date);
         } else {
             holder.tvCompleted.setVisibility(View.GONE);
         }
 
+        // Click vào item
         holder.itemView.setOnClickListener(v -> {
             if(listener != null) listener.onTaskClick(task);
         });
@@ -154,12 +166,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             super(itemView);
             tvTaskType = itemView.findViewById(R.id.tvTaskType);
             tvTaskName = itemView.findViewById(R.id.tvTaskName);
-            // Đã xóa ánh xạ tvProgress
-
-            btnDelete = itemView.findViewById(R.id.btnDelete);
             tvCompleted = itemView.findViewById(R.id.tvCompleted);
             subtaskContainer = itemView.findViewById(R.id.subtaskContainer);
             cardView = itemView.findViewById(R.id.taskCard);
+            btnDelete = itemView.findViewById(R.id.btnDelete);
         }
     }
 }
