@@ -23,11 +23,12 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat; // Import này cần thiết
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date; // Import này cần thiết
+import java.util.Date;
 import java.util.List;
-import java.util.Locale; // Import này cần thiết
+import java.util.Locale;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -72,19 +73,15 @@ public class CompletedTasksActivity extends AppCompatActivity {
         fetchCompletedTasks();
     }
 
-    // --- HÀM MỚI: FORMAT NGÀY GIỜ ---
     private String formatDate(String isoDate) {
         if (isoDate == null || isoDate.isEmpty()) return "";
         try {
-            // Trường hợp 1: Server trả về ISO 8601 (có chữ T) -> 2025-11-30T10:00:00.000Z
             if (isoDate.contains("T")) {
                 SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
                 Date date = isoFormat.parse(isoDate);
                 SimpleDateFormat displayFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
                 return displayFormat.format(date);
-            }
-            // Trường hợp 2: Server trả về yyyy-MM-dd -> 2025-11-30
-            else {
+            } else {
                 SimpleDateFormat simpleFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
                 Date date = simpleFormat.parse(isoDate);
                 SimpleDateFormat displayFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
@@ -92,13 +89,17 @@ public class CompletedTasksActivity extends AppCompatActivity {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return isoDate; // Nếu lỗi format thì trả về nguyên gốc
+            return isoDate;
         }
     }
 
     private void fetchCompletedTasks() {
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         String accessToken = sp.getString("accessToken", "");
+
+        // 1. LẤY USER ID HIỆN TẠI ĐỂ SO SÁNH
+        String currentUserIdStr = sp.getString("user_id", "0");
+        int currentUserId = Integer.parseInt(currentUserIdStr);
 
         Request request = new Request.Builder()
                 .url(BASE_URL)
@@ -132,24 +133,30 @@ public class CompletedTasksActivity extends AppCompatActivity {
                         JSONObject t = arr.getJSONObject(i);
                         int taskId = t.optInt("task_id", 0);
                         String title = t.optString("task_name", "");
-
                         String statusStr = t.optString("task_status", "").trim();
+
                         boolean isDone = statusStr.equalsIgnoreCase("Completed") || statusStr.equalsIgnoreCase("Done");
 
                         if (isDone) {
-                            TaskModel.TaskType type = TaskModel.TaskType.PERSONAL;
+                            // --- 2. SỬA LOGIC PHÂN LOẠI TẠI ĐÂY ---
+                            int createdBy = t.optInt("created_by", 0);
+                            TaskModel.TaskType type;
+
+                            if (createdBy == currentUserId) {
+                                // Do mình tạo -> PERSONAL (Màu xanh lá)
+                                type = TaskModel.TaskType.PERSONAL;
+                            } else {
+                                // Do người khác tạo -> WORK (Màu cam/vàng)
+                                type = TaskModel.TaskType.WORK_GROUP; // hoặc WORK_PRIVATE
+                            }
 
                             TaskModel task = new TaskModel(taskId, title, type, new ArrayList<>());
                             task.setDone(true);
 
-                            // --- CẬP NHẬT: Lấy ngày update và format lại ---
-                            // Ưu tiên lấy updated_at (ngày hoàn thành thực tế), nếu không có thì lấy due_date
                             String rawDate = t.optString("updated_at", "");
                             if (rawDate.isEmpty() || rawDate.equals("null")) {
                                 rawDate = t.optString("due_date", "");
                             }
-
-                            // Gọi hàm format trước khi set vào model
                             task.setCompletedDate(formatDate(rawDate));
 
                             completedTaskList.add(task);
