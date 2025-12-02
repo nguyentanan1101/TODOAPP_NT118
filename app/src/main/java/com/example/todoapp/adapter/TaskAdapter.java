@@ -82,12 +82,12 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             switch (task.getType()) {
                 case PERSONAL:
                     typeLabel = "Personal";
-                    colorCode = "#A5D6A7"; // Xanh Lá
+                    colorCode = "#67a4f5"; // Xanh dương
                     break;
                 case WORK_PRIVATE:
                 case WORK_GROUP:
                     typeLabel = "Work";
-                    colorCode = "#FFE082"; // Vàng
+                    colorCode = "#d9a46f"; // Vàng
                     break;
                 default:
                     typeLabel = "Other";

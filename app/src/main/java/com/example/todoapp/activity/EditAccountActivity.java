@@ -23,6 +23,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bumptech.glide.Glide; // Import Glide
 import com.example.todoapp.R;
 
 import org.json.JSONObject;
@@ -48,7 +49,7 @@ public class EditAccountActivity extends AppCompatActivity {
     private Button btnSave, btnExit;
     private ImageView btnPickDate, btnChangePhoto, imgAvatar;
 
-    // --- BIẾN CHO GENDER ---
+    // Gender
     private RadioGroup rgGender;
     private RadioButton rbMale, rbFemale;
 
@@ -61,7 +62,7 @@ public class EditAccountActivity extends AppCompatActivity {
         setContentView(R.layout.activity_edit_account);
 
         initViews();
-        loadUserData();
+        loadUserData(); // Load thông tin + Avatar cũ
 
         // Events
         btnPickDate.setOnClickListener(v -> showDatePicker());
@@ -83,7 +84,6 @@ public class EditAccountActivity extends AppCompatActivity {
         imgAvatar = findViewById(R.id.imgAvatar);
         btnChangePhoto = findViewById(R.id.btnChangePhoto);
 
-        // Ánh xạ Gender
         rgGender = findViewById(R.id.rgGender);
         rbMale = findViewById(R.id.rbMale);
         rbFemale = findViewById(R.id.rbFemale);
@@ -100,7 +100,7 @@ public class EditAccountActivity extends AppCompatActivity {
         edtMobile.setText(sp.getString("phone_number", ""));
         edtAddress.setText(sp.getString("address", ""));
 
-        // --- LOAD GENDER ---
+        // Load Gender
         String gender = sp.getString("gender", "");
         if (gender.equalsIgnoreCase("Male") || gender.equalsIgnoreCase("Nam")) {
             rbMale.setChecked(true);
@@ -108,21 +108,31 @@ public class EditAccountActivity extends AppCompatActivity {
             rbFemale.setChecked(true);
         }
 
-        // --- LOAD AVATAR ---
+        // --- LOAD AVATAR (Xử lý cả URL và Base64) ---
         String savedAvatar = sp.getString("avatar", "");
         if (!savedAvatar.isEmpty()) {
-            try {
-                byte[] decodedString = Base64.decode(savedAvatar, Base64.DEFAULT);
-                Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-                imgAvatar.setImageBitmap(decodedByte);
-            } catch (Exception e) {
-                e.printStackTrace();
-                imgAvatar.setImageResource(R.drawable.ic_user);
+            if (savedAvatar.startsWith("http")) {
+                // Dùng Glide load URL
+                Glide.with(this)
+                        .load(savedAvatar)
+                        .placeholder(R.drawable.ic_user)
+                        .error(R.drawable.ic_user)
+                        .circleCrop()
+                        .into(imgAvatar);
+            } else {
+                // Dùng Base64 (decode thủ công)
+                try {
+                    byte[] decodedString = Base64.decode(savedAvatar, Base64.DEFAULT);
+                    Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                    imgAvatar.setImageBitmap(decodedByte);
+                } catch (Exception e) {
+                    imgAvatar.setImageResource(R.drawable.ic_user);
+                }
             }
         }
     }
 
-    // --- GỬI API ---
+    // --- GỬI API UPDATE ---
     private void updateUserProfile() {
         String name = edtName.getText().toString().trim();
         String birthday = edtDate.getText().toString().trim();
@@ -130,12 +140,10 @@ public class EditAccountActivity extends AppCompatActivity {
         String phone = edtMobile.getText().toString().trim();
         String address = edtAddress.getText().toString().trim();
 
-        // Lấy giới tính
         String gender = "";
         if (rbMale.isChecked()) gender = "Male";
         else if (rbFemale.isChecked()) gender = "Female";
-
-        final String finalGender = gender; // Biến final để dùng trong thread
+        final String finalGender = gender;
 
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         String token = sp.getString("accessToken", "");
@@ -145,6 +153,8 @@ public class EditAccountActivity extends AppCompatActivity {
             return;
         }
 
+        Toast.makeText(this, "Đang lưu...", Toast.LENGTH_SHORT).show();
+
         new Thread(() -> {
             try {
                 JSONObject body = new JSONObject();
@@ -153,12 +163,11 @@ public class EditAccountActivity extends AppCompatActivity {
                 body.put("email", email);
                 body.put("phone_number", phone);
                 body.put("address", address);
-
-                // Gửi gender lên server
                 body.put("gender", finalGender);
 
+                // Gửi ảnh mới lên server (nếu có chọn)
                 if (pendingAvatarBase64 != null) {
-                    body.put("avatar", pendingAvatarBase64);
+                    body.put("avatar_base64", pendingAvatarBase64);
                 }
 
                 URL url = new URL(SERVER_URL);
@@ -191,13 +200,15 @@ public class EditAccountActivity extends AppCompatActivity {
                         editor.putString("phone_number", userObj.optString("phone_number", phone));
                         editor.putString("address", userObj.optString("address", address));
                         editor.putString("birthday", userObj.optString("birthday", birthday));
-
-                        // Cập nhật gender vào SharedPreferences từ response (hoặc dùng giá trị gửi đi nếu server ko trả về)
                         editor.putString("gender", userObj.optString("gender", finalGender));
 
-                        if (pendingAvatarBase64 != null) {
-                            editor.putString("avatar", pendingAvatarBase64);
+                        // --- QUAN TRỌNG: LƯU URL ẢNH MỚI TỪ SERVER TRẢ VỀ ---
+                        String newAvatarUrl = userObj.optString("avatar_url", "");
+                        if (!newAvatarUrl.isEmpty()) {
+                            editor.putString("avatar", newAvatarUrl);
                         }
+                        // Nếu server chưa trả URL ngay mà ta muốn hiện tạm,
+                        // có thể lưu pendingAvatarBase64 (tùy chọn, nhưng dùng URL tốt hơn)
 
                         editor.apply();
                     }
@@ -213,28 +224,27 @@ public class EditAccountActivity extends AppCompatActivity {
                         if (errorRes.contains("<!DOCTYPE") || errorRes.contains("<html")) {
                             Toast.makeText(this, "Ảnh quá lớn, Server từ chối!", Toast.LENGTH_LONG).show();
                         } else {
-                            Toast.makeText(this, "Lỗi cập nhật (" + responseCode + ")", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Lỗi: " + responseCode, Toast.LENGTH_SHORT).show();
                         }
                     });
                 }
 
             } catch (Exception e) {
                 e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(this, "Lỗi kết nối: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(this, "Lỗi kết nối!", Toast.LENGTH_SHORT).show());
             }
         }).start();
     }
 
     // --- CÁC HÀM XỬ LÝ ẢNH VÀ NGÀY THÁNG (GIỮ NGUYÊN) ---
-
     private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     selectedImageUri = result.getData().getData();
                     if (selectedImageUri != null) {
-                        imgAvatar.setImageURI(selectedImageUri);
-                        pendingAvatarBase64 = convertImageToBase64(selectedImageUri);
+                        imgAvatar.setImageURI(selectedImageUri); // Hiện xem trước
+                        pendingAvatarBase64 = convertImageToBase64(selectedImageUri); // Chuẩn bị gửi
                     }
                 }
             }

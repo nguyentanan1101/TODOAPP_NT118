@@ -236,10 +236,11 @@ public class LoginActivity extends AppCompatActivity {
         editor.putString("email", user.optString("email", ""));
         editor.putString("phone_number", user.optString("phone_number", ""));
         editor.putString("address", user.optString("address", ""));
-
-        // Lưu ngày sinh và avatar (nếu có)
         editor.putString("birthday", user.optString("birthday", ""));
-        editor.putString("avatar_url", user.optString("avatar_url", ""));
+        editor.putString("gender", user.optString("gender", ""));
+
+        String avatarUrl = user.optString("avatar_url", "");
+        editor.putString("avatar", avatarUrl);
 
         // 3. Xử lý Remember Me
         if (chkRememberMe.isChecked()) {
