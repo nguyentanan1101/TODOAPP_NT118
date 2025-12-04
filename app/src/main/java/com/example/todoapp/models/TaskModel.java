@@ -17,21 +17,26 @@ public class TaskModel implements Serializable {
     private boolean done = false;
     private String completedDate;
     private String status;
-
-    // --- THÊM BIẾN PRIORITY ---
     private String priority;
+    private String description;
 
-    // Constructor đơn giản (Cập nhật thêm priority)
+    // --- MỚI THÊM: Biến lưu ngày hết hạn ---
+    private String dueDate;
+
+    // Constructor đơn giản
     public TaskModel(int id, String title, TaskType type, List<SubTaskModel> subTasks, String priority) {
         this.id = id;
         this.title = title;
         this.type = type;
         this.subTasks = subTasks;
-        this.priority = priority; // Gán giá trị
+        this.priority = priority;
+
+        this.done = false;
+        this.status = "ToDo";
         updateDoneStatus();
     }
 
-    // Constructor đầy đủ (Cập nhật thêm priority)
+    // Constructor đầy đủ
     public TaskModel(int id, String title, TaskType type, List<SubTaskModel> subTasks,
                      boolean done, String completedDate, String status, String priority) {
         this.id = id;
@@ -41,19 +46,22 @@ public class TaskModel implements Serializable {
         this.done = done;
         this.completedDate = completedDate;
         this.status = status;
-        this.priority = priority; // Gán giá trị
+        this.priority = priority;
     }
 
     // --- Getter & Setter ---
+    public String getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(String dueDate) {
+        this.dueDate = dueDate;
+    }
 
     public String getPriority() {
-        // Trả về mặc định là "Low" nếu dữ liệu bị null
         return (priority == null || priority.isEmpty()) ? "Low" : priority;
     }
-
-    public void setPriority(String priority) {
-        this.priority = priority;
-    }
+    public void setPriority(String priority) { this.priority = priority; }
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
@@ -106,17 +114,15 @@ public class TaskModel implements Serializable {
             }
         }
 
-        this.done = allDone;
-
-        if (allDone) {
-            setStatus("Completed");
-            if (this.completedDate == null) {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                this.completedDate = sdf.format(new Date());
-            }
-        } else {
-            setStatus("Working");
-            this.completedDate = null;
+        if (this.done != allDone) {
+            setDone(allDone);
         }
+    }
+
+    public String getDescription() {
+        return description;
+    }
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

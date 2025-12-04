@@ -1,9 +1,13 @@
 package com.example.todoapp.activity;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.CheckBox;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,11 +22,13 @@ import com.example.todoapp.models.SubTaskModel;
 import com.example.todoapp.models.TaskModel;
 import com.google.gson.Gson;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger; // Thêm import này
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -35,129 +41,178 @@ import okhttp3.Response;
 public class TaskDetailActivity extends AppCompatActivity {
 
     private RecyclerView recyclerSubTasks;
-    private TextView tvTaskTitle;
+    private TextView tvTaskTitle, tvDescription;
     private ImageView btnBack, btnTick;
-    private TaskModel task;
 
+    private LinearLayout layoutManualDone;
+    private CheckBox chkManualDone;
+
+    private TaskModel task;
     private OkHttpClient client = new OkHttpClient();
     private Gson gson = new Gson();
 
+    // URL API
     private static final String UPDATE_SUBTASK_URL = "http://34.124.178.44:4000/api/subtask/";
     private static final String UPDATE_TASK_URL_BASE = "http://34.124.178.44:4000/api/tasks/";
+    private static final String GET_SUBTASK_URL = "http://34.124.178.44:4000/api/subtask/task/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_task_detail);
 
-        tvTaskTitle = findViewById(R.id.tvTaskTitle);
-        btnBack = findViewById(R.id.btnBack);
-        btnTick = findViewById(R.id.btnTick);
-        recyclerSubTasks = findViewById(R.id.recyclerSubTasks);
+        initViews();
+
+        // Nhận dữ liệu
+        task = (TaskModel) getIntent().getSerializableExtra("TASK");
+        if (task != null) {
+            displayTaskData();
+            fetchLatestSubTasks(task.getId());
+        }
 
         btnBack.setOnClickListener(v -> finish());
 
-        task = (TaskModel) getIntent().getSerializableExtra("TASK");
-        if (task != null) {
-            tvTaskTitle.setText(task.getTitle());
-            showGroupedSubTasks(task.getSubTasks());
+        // --- XỬ LÝ KHI BẤM SAVE (TICK) ---
+        btnTick.setOnClickListener(v -> handleSaveTask());
+    }
+
+    private void initViews() {
+        tvTaskTitle = findViewById(R.id.tvTaskTitle);
+        tvDescription = findViewById(R.id.tvDescription);
+        btnBack = findViewById(R.id.btnBack);
+        btnTick = findViewById(R.id.btnTick);
+        recyclerSubTasks = findViewById(R.id.recyclerSubTasks);
+        layoutManualDone = findViewById(R.id.layoutManualDone);
+        chkManualDone = findViewById(R.id.chkManualDone);
+    }
+
+    private void displayTaskData() {
+        tvTaskTitle.setText(task.getTitle());
+
+        String desc = task.getDescription();
+        // --- SỬA LỖI HIỂN THỊ DESCRIPTION ---
+        // Kiểm tra kỹ null, rỗng hoặc chuỗi "null"
+        if (desc == null || desc.trim().isEmpty() || desc.equalsIgnoreCase("null")) {
+            tvDescription.setText("No description provided.");
+        } else {
+            tvDescription.setText(desc);
         }
 
-        btnTick.setOnClickListener(v -> {
-            if (task != null) {
-                SubTaskGroupAdapter adapter = (SubTaskGroupAdapter) recyclerSubTasks.getAdapter();
-                if (adapter != null) {
-                    List<SubTaskModel> updatedSubTasks = adapter.getAllSubTasks();
-                    task.setSubTasks(updatedSubTasks);
+        if (task.getSubTasks() == null || task.getSubTasks().isEmpty()) {
+            recyclerSubTasks.setVisibility(View.GONE);
+            layoutManualDone.setVisibility(View.VISIBLE);
+            chkManualDone.setChecked(task.isDone());
 
-                    // Logic kiểm tra hoàn thành
-                    boolean allDone = true;
-                    if (updatedSubTasks.isEmpty()) allDone = false;
-                    for (SubTaskModel sub : updatedSubTasks) {
-                        if (!sub.isDone()) {
-                            allDone = false;
-                            break;
-                        }
+            chkManualDone.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                task.setDone(isChecked);
+                task.setStatus(isChecked ? "Done" : "Working");
+            });
+
+        } else {
+            recyclerSubTasks.setVisibility(View.VISIBLE);
+            layoutManualDone.setVisibility(View.GONE);
+            showGroupedSubTasks(task.getSubTasks());
+        }
+    }
+
+    // ... (Giữ nguyên handleSaveTask, fetchLatestSubTasks, updateTaskStatusToServer, updateSubTasksToServer) ...
+    // Copy lại các hàm này từ code cũ, không thay đổi gì ở đây
+
+    private void fetchLatestSubTasks(int taskId) {
+        SharedPreferences sp = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
+        String accessToken = sp.getString("accessToken", "");
+        Request request = new Request.Builder().url(GET_SUBTASK_URL + taskId).addHeader("Authorization", "Bearer " + accessToken).get().build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override public void onFailure(Call call, IOException e) { e.printStackTrace(); }
+            @Override public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful()) return;
+                try {
+                    JSONObject obj = new JSONObject(response.body().string());
+                    JSONArray arr = obj.getJSONArray("subtasks");
+                    List<SubTaskModel> subTasks = new ArrayList<>();
+                    for (int i = 0; i < arr.length(); i++) {
+                        JSONObject s = arr.getJSONObject(i);
+                        int subId = s.optInt("subtask_id", 0);
+                        String subTitle = s.optString("subtask_name", "");
+                        String subStatus = s.optString("subtask_status", "");
+                        if (subStatus.equals("null") || subStatus.isEmpty()) subStatus = "ToDo";
+                        boolean done = subStatus.equalsIgnoreCase("Completed") || subStatus.equalsIgnoreCase("Done");
+                        String dueDate = s.optString("due_date", "");
+                        if(dueDate.contains("T")) dueDate = dueDate.split("T")[0];
+                        subTasks.add(new SubTaskModel(subId, subTitle, "", dueDate, done));
                     }
-
-                    // Cập nhật trạng thái Task cha Local
-                    String newTaskStatus = allDone ? "Done" : "Working";
-                    task.setStatus(newTaskStatus);
-                    task.setDone(allDone);
-
-                    // --- GỬI API CẬP NHẬT ---
-                    // 1. Cập nhật Subtasks trước
-                    updateSubTasksToServer(updatedSubTasks);
-
-                    // 2. Cập nhật Task cha sau
-                    updateTaskStatusToServer(task.getId(), newTaskStatus);
-                }
+                    task.setSubTasks(subTasks);
+                    runOnUiThread(() -> {
+                        // Cập nhật lại UI để subtask mới load cũng được gom nhóm đúng
+                        displayTaskData();
+                    });
+                } catch (Exception e) { e.printStackTrace(); }
             }
-
-            Intent intent = new Intent();
-            intent.putExtra("UPDATED_TASK", task);
-            setResult(RESULT_OK, intent);
-            Toast.makeText(this, "Saved changes", Toast.LENGTH_SHORT).show();
-            finish();
         });
+    }
+
+    private void handleSaveTask() {
+        if (task == null) return;
+        boolean hasSubtasks = task.getSubTasks() != null && !task.getSubTasks().isEmpty();
+        if (hasSubtasks) {
+            SubTaskGroupAdapter adapter = (SubTaskGroupAdapter) recyclerSubTasks.getAdapter();
+            if (adapter != null) {
+                List<SubTaskModel> updatedSubTasks = adapter.getAllSubTasks();
+                task.setSubTasks(updatedSubTasks);
+                boolean allDone = true;
+                for (SubTaskModel sub : updatedSubTasks) {
+                    if (!sub.isDone()) { allDone = false; break; }
+                }
+                String newTaskStatus = allDone ? "Done" : "Working";
+                if (!allDone && isAllNew(updatedSubTasks)) newTaskStatus = "Working";
+                task.setStatus(newTaskStatus);
+                task.setDone(allDone);
+                updateSubTasksToServer(updatedSubTasks);
+                updateTaskStatusToServer(task.getId(), newTaskStatus);
+            }
+        } else {
+            String statusToSend = task.isDone() ? "Done" : "Working";
+            updateTaskStatusToServer(task.getId(), statusToSend);
+        }
+        Intent intent = new Intent();
+        intent.putExtra("UPDATED_TASK", task);
+        setResult(RESULT_OK, intent);
+        Toast.makeText(this, "Saved changes", Toast.LENGTH_SHORT).show();
+        finish();
+    }
+
+    private boolean isAllNew(List<SubTaskModel> subs) {
+        for(SubTaskModel s : subs) if(s.isDone()) return false;
+        return true;
     }
 
     private void updateTaskStatusToServer(int taskId, String newStatus) {
         String accessToken = getSharedPreferences("MyAppPrefs", MODE_PRIVATE).getString("accessToken", "");
-        Map<String, Object> map = new HashMap<>();
-        map.put("newStatus", newStatus); // Key backend yêu cầu
-
-        String json = gson.toJson(map);
-        RequestBody body = RequestBody.create(json, MediaType.get("application/json; charset=utf-8"));
-        String url = UPDATE_TASK_URL_BASE + taskId + "/status";
-
-        Request request = new Request.Builder()
-                .url(url)
-                .addHeader("Authorization", "Bearer " + accessToken)
-                .patch(body)
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) { e.printStackTrace(); }
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                if (!response.isSuccessful()) {
-                    Log.e("API_ERROR", "Task Update Failed: " + response.code());
-                }
-            }
+        Map<String, Object> map = new HashMap<>(); map.put("newStatus", newStatus); map.put("task_status", newStatus); map.put("status", newStatus);
+        RequestBody body = RequestBody.create(gson.toJson(map), MediaType.get("application/json; charset=utf-8"));
+        client.newCall(new Request.Builder().url(UPDATE_TASK_URL_BASE + taskId + "/status").addHeader("Authorization", "Bearer " + accessToken).patch(body).build()).enqueue(new Callback() {
+            @Override public void onFailure(Call call, IOException e) {}
+            @Override public void onResponse(Call call, Response response) throws IOException {}
         });
     }
 
     private void updateSubTasksToServer(List<SubTaskModel> subTasks) {
         String accessToken = getSharedPreferences("MyAppPrefs", MODE_PRIVATE).getString("accessToken", "");
-
-        // Gửi song song các request (đơn giản nhưng hiệu quả với số lượng subtask ít)
         for (SubTaskModel sub : subTasks) {
-            Map<String, Object> map = new HashMap<>();
-            map.put("newStatus", sub.isDone() ? "Done" : "Working");
-
-            String json = gson.toJson(map);
-            RequestBody body = RequestBody.create(json, MediaType.get("application/json; charset=utf-8"));
-
-            Request request = new Request.Builder()
-                    .url(UPDATE_SUBTASK_URL + sub.getId() + "/status")
-                    .addHeader("Authorization", "Bearer " + accessToken)
-                    .patch(body)
-                    .build();
-
-            client.newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) { e.printStackTrace(); }
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    if(!response.isSuccessful()) Log.e("API_SUB_ERROR", "Subtask " + sub.getId() + " failed");
-                }
-            });
+            try {
+                JSONObject jsonBody = new JSONObject();
+                String status = sub.isDone() ? "Done" : "Working";
+                jsonBody.put("subtask_status", status); jsonBody.put("status", status); jsonBody.put("newStatus", status);
+                RequestBody body = RequestBody.create(jsonBody.toString(), MediaType.get("application/json; charset=utf-8"));
+                client.newCall(new Request.Builder().url(UPDATE_SUBTASK_URL + sub.getId() + "/status").addHeader("Authorization", "Bearer " + accessToken).patch(body).build()).enqueue(new Callback() {
+                    @Override public void onFailure(Call call, IOException e) {}
+                    @Override public void onResponse(Call call, Response response) throws IOException {}
+                });
+            } catch (Exception e) { e.printStackTrace(); }
         }
     }
 
-    // ... (Phần showGroupedSubTasks giữ nguyên không đổi) ...
+    // --- LOGIC GOM NHÓM VÀ HIỂN THỊ TIÊU ĐỀ NHÓM (ĐÃ SỬA LỖI NULL) ---
     private void showGroupedSubTasks(List<SubTaskModel> subTasks) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         Calendar c = Calendar.getInstance();
@@ -166,27 +221,25 @@ public class TaskDetailActivity extends AppCompatActivity {
         String tomorrowStr = sdf.format(c.getTime());
 
         Map<String, List<SubTaskModel>> map = new TreeMap<>((a, b) -> {
+            // Logic sắp xếp nhóm: Today -> Tomorrow -> No due date -> Ngày khác
             if (a.equals(b)) return 0;
-            if (a.equals("Today")) return -1;
-            if (b.equals("Today")) return 1;
-            if (a.equals("Tomorrow")) return -1;
-            if (b.equals("Tomorrow")) return 1;
-            if (a.equals("No due date")) return 1;
-            if (b.equals("No due date")) return -1;
-            try {
-                Date da = sdf.parse(a);
-                Date db = sdf.parse(b);
-                return da.compareTo(db);
-            } catch (ParseException e) {
-                return a.compareTo(b);
-            }
+            if (a.equals("Today")) return -1; if (b.equals("Today")) return 1;
+            if (a.equals("Tomorrow")) return -1; if (b.equals("Tomorrow")) return 1;
+            if (a.equals("No Due Date")) return 1; if (b.equals("No Due Date")) return -1; // Đẩy No Due Date xuống cuối
+            try { return sdf.parse(a).compareTo(sdf.parse(b)); } catch (ParseException e) { return a.compareTo(b); }
         });
 
         for (SubTaskModel sub : subTasks) {
             String due = sub.getDueDate();
-            if (due == null || due.isEmpty()) due = "No due date";
-            else if (due.equals(todayStr)) due = "Today";
-            else if (due.equals(tomorrowStr)) due = "Tomorrow";
+
+            // --- SỬA LỖI HIỂN THỊ DUE DATE ---
+            if (due == null || due.isEmpty() || due.equalsIgnoreCase("null")) {
+                due = "No Due Date"; // Gán nhãn rõ ràng
+            } else if (due.equals(todayStr)) {
+                due = "Today";
+            } else if (due.equals(tomorrowStr)) {
+                due = "Tomorrow";
+            }
 
             map.computeIfAbsent(due, k -> new ArrayList<>()).add(sub);
         }

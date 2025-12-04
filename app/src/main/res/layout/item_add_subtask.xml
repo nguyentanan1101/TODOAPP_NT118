@@ -6,11 +6,11 @@
     android:gravity="center_vertical"
     android:layout_marginBottom="8dp">
 
-    <CheckBox
-        android:id="@+id/chkSubtask"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:buttonTint="#757575"/>
+    <ImageView
+        android:id="@+id/imgTarget"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:src="@drawable/ic_target" />
 
     <EditText
         android:id="@+id/etSubtaskContent"

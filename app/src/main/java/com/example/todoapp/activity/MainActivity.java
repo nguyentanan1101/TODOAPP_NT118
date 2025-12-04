@@ -13,7 +13,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu; // Import PopupMenu
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
         layoutSearchInput = findViewById(R.id.layoutSearchInput);
         etSearch = findViewById(R.id.etSearch);
         btnCloseSearch = findViewById(R.id.btnCloseSearch);
-        btnSort = findViewById(R.id.btnSort); // Ánh xạ nút Sort
+        btnSort = findViewById(R.id.btnSort);
 
         initButtons();
         setupSearchFunctionality();
@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("TASK", task);
             startActivity(intent);
         });
-        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        recyclerView.setLayoutManager(new androidx.recyclerview.widget.StaggeredGridLayoutManager(2, androidx.recyclerview.widget.StaggeredGridLayoutManager.VERTICAL));
         recyclerView.setAdapter(adapter);
 
         // Các sự kiện chuyển màn hình
@@ -117,41 +117,40 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        // Mặc định chọn nút Today
         selectButton(btnToday);
     }
 
-    // --- HÀM HIỂN THỊ MENU SORT ---
+    @Override
+    protected void onResume() {
+        super.onResume();
+        fetchTasksFromAPI();
+    }
+
+    // --- CÁC HÀM SORT ---
     private void showSortMenu(View view) {
         PopupMenu popup = new PopupMenu(this, view);
-        // Thêm menu bằng code (hoặc dùng menu xml)
         popup.getMenu().add(0, 1, 0, "Sort by Due Date (A-Z)");
         popup.getMenu().add(0, 2, 0, "Sort by Priority (High-Low)");
         popup.getMenu().add(0, 3, 0, "Sort by Name (A-Z)");
 
         popup.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
-                case 1:
-                    sortTasksByDate();
-                    return true;
-                case 2:
-                    sortTasksByPriority();
-                    return true;
-                case 3:
-                    sortTasksByName();
-                    return true;
+                case 1: sortTasksByDate(); return true;
+                case 2: sortTasksByPriority(); return true;
+                case 3: sortTasksByName(); return true;
             }
             return false;
         });
         popup.show();
     }
 
-    // --- LOGIC SẮP XẾP ---
-
     private void sortTasksByName() {
-        // Sắp xếp danh sách HIỆN TẠI (đang hiển thị trên màn hình)
-        // Nếu bạn muốn sắp xếp toàn bộ rồi mới lọc lại thì sort originalTaskList
-        // Ở đây tôi sort trực tiếp taskList để người dùng thấy ngay kết quả trên màn hình
-        Collections.sort(taskList, (t1, t2) -> t1.getTitle().compareToIgnoreCase(t2.getTitle()));
+        Collections.sort(taskList, (t1, t2) -> {
+            String n1 = t1.getTitle() != null ? t1.getTitle() : "";
+            String n2 = t2.getTitle() != null ? t2.getTitle() : "";
+            return n1.compareToIgnoreCase(n2);
+        });
         adapter.notifyDataSetChanged();
     }
 
@@ -159,7 +158,6 @@ public class MainActivity extends AppCompatActivity {
         Collections.sort(taskList, (t1, t2) -> {
             String d1 = getSubTaskDueDate(t1);
             String d2 = getSubTaskDueDate(t2);
-            // Nếu ko có ngày, đẩy xuống cuối
             if (d1.isEmpty()) return 1;
             if (d2.isEmpty()) return -1;
             return d1.compareTo(d2);
@@ -167,8 +165,6 @@ public class MainActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
     }
 
-    // Hàm phụ lấy ngày của subtask đầu tiên (vì logic Today dựa vào subtask)
-    // Nếu bạn có ngày của task cha thì dùng t.getDueDate()
     private String getSubTaskDueDate(TaskModel t) {
         if (t.getSubTasks() != null && !t.getSubTasks().isEmpty()) {
             return t.getSubTasks().get(0).getDueDate();
@@ -177,11 +173,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sortTasksByPriority() {
-        // Priority: High > Medium > Low
         Collections.sort(taskList, (t1, t2) -> {
             int p1 = getPriorityValue(t1.getPriority());
             int p2 = getPriorityValue(t2.getPriority());
-            return p2 - p1; // Giảm dần (High trước)
+            return p2 - p1;
         });
         adapter.notifyDataSetChanged();
     }
@@ -194,14 +189,7 @@ public class MainActivity extends AppCompatActivity {
         return 0;
     }
 
-    // ... (Các phần còn lại của MainActivity giữ nguyên) ...
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        fetchTasksFromAPI();
-    }
-
+    // --- CÁC HÀM UI BUTTON ---
     private void initButtons() {
         btnToday.setOnClickListener(v -> {
             currentFilter = "TODAY";
@@ -227,17 +215,13 @@ public class MainActivity extends AppCompatActivity {
         selectedButton.setSelected(true);
     }
 
+    // --- API FETCH TASKS ---
     private void fetchTasksFromAPI() {
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         String accessToken = sp.getString("accessToken", "");
-
         String userIdStr = sp.getString("user_id", "0");
         int currentUserId = 0;
-        try {
-            currentUserId = Integer.parseInt(userIdStr);
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-        }
+        try { currentUserId = Integer.parseInt(userIdStr); } catch (Exception e) {}
         final int myId = currentUserId;
 
         Request request = new Request.Builder()
@@ -249,8 +233,7 @@ public class MainActivity extends AppCompatActivity {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Cannot connect to server", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Connection Error", Toast.LENGTH_SHORT).show());
             }
 
             @Override
@@ -274,76 +257,73 @@ public class MainActivity extends AppCompatActivity {
                     String token = sp.getString("accessToken", "");
                     List<JSONObject> validTasks = new ArrayList<>();
 
-                    // --- BƯỚC 1: LỌC VÀ CHUẨN HÓA DỮ LIỆU ---
                     for (int i = 0; i < arr.length(); i++) {
                         JSONObject t = arr.getJSONObject(i);
-
-                        // 1. XỬ LÝ STATUS BỊ NULL
-                        // Kiểm tra cả "task_status" và "status"
                         String statusStr = t.optString("task_status");
                         if (statusStr == null || statusStr.isEmpty() || statusStr.equals("null")) {
                             statusStr = t.optString("status");
                         }
-                        // Nếu vẫn null -> Gán mặc định là "ToDo" để hiện lên App
                         if (statusStr == null || statusStr.isEmpty() || statusStr.equals("null")) {
                             statusStr = "ToDo";
                         }
-
-                        // Lưu lại status chuẩn này vào JSON object để dùng ở bước sau
                         t.put("safe_status", statusStr);
 
-                        // 2. LỌC: Chỉ lấy task đang làm (Working/ToDo)
-                        if (statusStr.equalsIgnoreCase("Working") ||
-                                statusStr.equalsIgnoreCase("ToDo")) {
+                        if (statusStr.equalsIgnoreCase("Working") || statusStr.equalsIgnoreCase("ToDo")) {
                             validTasks.add(t);
                         }
                     }
 
                     totalTasksToLoad = validTasks.size();
-                    if (totalTasksToLoad == 0) return;
+                    if (totalTasksToLoad == 0) {
+                        runOnUiThread(() -> {
+                            taskList.clear();
+                            adapter.notifyDataSetChanged();
+                        });
+                        return;
+                    }
 
-                    // --- BƯỚC 2: TẠO MODEL TỪ DANH SÁCH HỢP LỆ ---
                     for (JSONObject t : validTasks) {
                         int taskId = t.optInt("task_id", 0);
-
-                        // 3. XỬ LÝ TÊN TASK (JSON trả về 'title' nhưng code cũ dùng 'task_name')
                         String title = t.optString("task_name");
                         if (title.isEmpty()) title = t.optString("title", "No Title");
 
                         int createdBy = t.optInt("created_by", 0);
                         int projectId = t.optInt("project_id", 0);
 
-                        // 4. PHÂN LOẠI PERSONAL / WORK
                         TaskModel.TaskType type;
-                        if (projectId > 0) {
-                            type = TaskModel.TaskType.WORK_GROUP;
-                        } else {
-                            if (createdBy == myId) {
-                                type = TaskModel.TaskType.PERSONAL;
-                            } else {
-                                type = TaskModel.TaskType.WORK_PRIVATE;
-                            }
+                        if (projectId > 0) type = TaskModel.TaskType.WORK_GROUP;
+                        else {
+                            if (createdBy == myId) type = TaskModel.TaskType.PERSONAL;
+                            else type = TaskModel.TaskType.WORK_PRIVATE;
                         }
 
                         String priority = t.optString("priority", "Low");
-
-                        // Tạo TaskModel
                         TaskModel task = new TaskModel(taskId, title, type, new ArrayList<>(), priority);
 
-                        // Set lại status từ biến safe_status đã xử lý ở trên
+                        // --- LẤY DUE DATE (Đoạn code bạn vừa gửi) ---
+                        String dueDate = t.optString("due_date", "");
+                        if (dueDate.contains("T")) {
+                            dueDate = dueDate.split("T")[0];
+                        }
+                        task.setDueDate(dueDate);
+                        // ---------------------------------------------
+
+                        // --- LẤY DESCRIPTION (Để hiển thị ở màn hình chi tiết) ---
+                        String desc = t.optString("description");
+                        if(desc.isEmpty()) desc = t.optString("task_description", "");
+                        task.setDescription(desc);
+                        // ---------------------------------------------------------
+
                         String safeStatus = t.optString("safe_status", "ToDo");
                         boolean isDone = safeStatus.equalsIgnoreCase("Completed") || safeStatus.equalsIgnoreCase("Done");
                         task.setDone(isDone);
-
                         task.setStatus(safeStatus);
 
                         originalTaskList.add(task);
                         loadSubTasks(task, taskId, token);
                     }
 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                } catch (Exception e) { e.printStackTrace(); }
             }
         });
     }
@@ -357,10 +337,7 @@ public class MainActivity extends AppCompatActivity {
 
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
-                checkAndRefreshUI();
-            }
+            public void onFailure(Call call, IOException e) { checkAndRefreshUI(); }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
@@ -374,13 +351,26 @@ public class MainActivity extends AppCompatActivity {
                         for (int i = 0; i < arr.length(); i++) {
                             JSONObject s = arr.getJSONObject(i);
                             int subId = s.optInt("subtask_id", 0);
-                            String subTitle = s.optString("subtask_name", "");
-                            String subDesc = s.optString("subtask_description", "");
-                            String dueDate = s.optString("due_date", "");
-                            String subStatus = s.optString("subtask_status", "");
 
-                            boolean done = subStatus.equalsIgnoreCase("Completed") || subStatus.equalsIgnoreCase("Done");
-                            subTasks.add(new SubTaskModel(subId, subTitle, subDesc, dueDate, done));
+                            // Lấy Title: JSON trả về "title"
+                            String subTitle = s.optString("title");
+                            if (subTitle.isEmpty()) subTitle = s.optString("subtask_name", "");
+
+                            // --- SỬA ĐOẠN NÀY: LẤY ĐÚNG STATUS ---
+                            String subStatus = s.optString("status"); // JSON có key "status"
+                            if (subStatus == null || subStatus.isEmpty() || subStatus.equals("null")) {
+                                subStatus = s.optString("subtask_status", "ToDo");
+                            }
+
+                            // Kiểm tra cả "Done" và "Completed"
+                            boolean done = subStatus.equalsIgnoreCase("Done") || subStatus.equalsIgnoreCase("Completed");
+                            // ---------------------------------------
+
+                            // Lấy ngày nếu có
+                            String dueDate = s.optString("due_date", "");
+                            if(dueDate.contains("T")) dueDate = dueDate.split("T")[0];
+
+                            subTasks.add(new SubTaskModel(subId, subTitle, "", dueDate, done));
                         }
                         task.setSubTasks(subTasks);
                     }
@@ -404,27 +394,46 @@ public class MainActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         String todayStr = sdf.format(new Date());
 
+        if (filterType.equals("TODAY")) labelDots.setVisibility(View.VISIBLE);
+        else labelDots.setVisibility(View.GONE);
+
         List<TaskModel> filtered = new ArrayList<>();
 
         for (TaskModel t : originalTaskList) {
+            // Bỏ qua task đã hoàn thành
             if (t.isDone()) continue;
 
             switch (filterType) {
                 case "TODAY":
-                    if(t.getSubTasks() != null) {
+                    boolean isShow = false;
+
+                    // 1. Kiểm tra ngày của Task cha
+                    // (Lưu ý: Cần đảm bảo TaskModel đã có getter getDueDate() và dữ liệu đã được set trong fetchTasksFromAPI)
+                    if (t.getDueDate() != null && t.getDueDate().equals(todayStr)) {
+                        isShow = true;
+                    }
+
+                    // 2. Nếu Task cha không phải hôm nay, kiểm tra tiếp Subtask
+                    if (!isShow && t.getSubTasks() != null) {
                         for (SubTaskModel sub : t.getSubTasks()) {
                             if (sub.getDueDate() != null && sub.getDueDate().equals(todayStr)) {
-                                filtered.add(t);
+                                isShow = true;
                                 break;
                             }
                         }
                     }
+
+                    if (isShow) {
+                        filtered.add(t);
+                    }
                     break;
+
                 case "PERSONAL":
                     if (t.getType() == TaskModel.TaskType.PERSONAL) {
                         filtered.add(t);
                     }
                     break;
+
                 case "WORK":
                     if (t.getType() != TaskModel.TaskType.PERSONAL) {
                         filtered.add(t);
@@ -433,12 +442,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // Cập nhật lại taskList (đây là list đang hiển thị trên màn hình)
+        // Cập nhật list hiển thị
         taskList.clear();
         taskList.addAll(filtered);
         adapter.notifyDataSetChanged();
     }
 
+    // --- SEARCH ---
     private void setupSearchFunctionality() {
         btnSearch.setOnClickListener(v -> showSearchLayout(true));
         btnCloseSearch.setOnClickListener(v -> {
@@ -455,14 +465,10 @@ public class MainActivity extends AppCompatActivity {
     }
     private void showSearchLayout(boolean isSearching) {
         if (isSearching) {
-            btnSearch.setVisibility(View.GONE);
-            btnNotification.setVisibility(View.GONE);
-            layoutSearchInput.setVisibility(View.VISIBLE);
-            etSearch.requestFocus();
-            showKeyboard();
+            btnSearch.setVisibility(View.GONE); btnNotification.setVisibility(View.GONE);
+            layoutSearchInput.setVisibility(View.VISIBLE); etSearch.requestFocus(); showKeyboard();
         } else {
-            btnSearch.setVisibility(View.VISIBLE);
-            btnNotification.setVisibility(View.VISIBLE);
+            btnSearch.setVisibility(View.VISIBLE); btnNotification.setVisibility(View.VISIBLE);
             layoutSearchInput.setVisibility(View.GONE);
         }
     }
@@ -471,8 +477,6 @@ public class MainActivity extends AppCompatActivity {
         for (TaskModel task : originalTaskList) {
             if (task.getTitle().toLowerCase().contains(query.toLowerCase())) filteredList.add(task);
         }
-
-        // Cập nhật taskList hiển thị
         taskList.clear();
         taskList.addAll(filteredList);
         adapter.notifyDataSetChanged();

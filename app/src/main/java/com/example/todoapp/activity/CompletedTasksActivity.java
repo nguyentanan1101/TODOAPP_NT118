@@ -45,7 +45,7 @@ public class CompletedTasksActivity extends AppCompatActivity {
     private List<TaskModel> completedTaskList = new ArrayList<>();
 
     private OkHttpClient client = new OkHttpClient();
-    private static final String BASE_URL = "http://34.124.178.44:4000/api/tasks/user-tasks";
+    private static final String BASE_URL = "http://34.124.178.44:4000/api/tasks/create-by-me";
     private static final String SUBTASK_URL = "http://34.124.178.44:4000/api/subtask/task/";
 
     @Override
