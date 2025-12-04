@@ -26,9 +26,13 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     private List<TaskModel> taskList;
     private OnTaskClickListener listener;
     private OnDeleteClickListener deleteListener;
+    private boolean isCompletedScreen = false;
 
     public interface OnTaskClickListener {
         void onTaskClick(TaskModel task);
+    }
+    public void setCompletedScreen(boolean isCompletedScreen) {
+        this.isCompletedScreen = isCompletedScreen;
     }
 
     public interface OnDeleteClickListener {
@@ -72,39 +76,60 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         TaskModel task = taskList.get(position);
 
-        // --- 1. MÀU NỀN ---
+        // --- 1. MÀU NỀN & GẠCH NGANG CHỮ ---
         String typeLabel = "Task";
         int backgroundColor;
         int titleColor;
+        boolean shouldStrikeThrough = false; // Biến cờ để kiểm soát gạch ngang
 
-        if (task.isDone()) {
+        if (isCompletedScreen) {
+            // TRƯỜNG HỢP: MÀN HÌNH COMPLETED TASKS
             backgroundColor = Color.parseColor("#F5F5F5");
-            titleColor = Color.parseColor("#9E9E9E");
+            titleColor = Color.parseColor("#000000"); // Chữ đen rõ ràng
+
             if (task.getType() == TaskModel.TaskType.PERSONAL) typeLabel = "Personal";
             else typeLabel = "Work";
+
+            // KHÔNG GẠCH NGANG CHỮ (QUAN TRỌNG)
+            shouldStrikeThrough = false;
+
         } else {
-            titleColor = Color.parseColor("#000000");
-            if (task.getType() == TaskModel.TaskType.PERSONAL) {
-                typeLabel = "Personal";
-                backgroundColor = Color.parseColor("#E3F2FD");
+            // TRƯỜNG HỢP: MÀN HÌNH CHÍNH (MAIN)
+            if (task.isDone()) {
+                backgroundColor = Color.parseColor("#F5F5F5");
+                titleColor = Color.parseColor("#9E9E9E");
+                if (task.getType() == TaskModel.TaskType.PERSONAL) typeLabel = "Personal";
+                else typeLabel = "Work";
+
+                // Gạch ngang
+                shouldStrikeThrough = true;
             } else {
-                typeLabel = "Work";
-                backgroundColor = Color.parseColor("#FFFFFF");
+                titleColor = Color.parseColor("#000000");
+                if (task.getType() == TaskModel.TaskType.PERSONAL) {
+                    typeLabel = "Personal";
+                    backgroundColor = Color.parseColor("#E3F2FD");
+                } else {
+                    typeLabel = "Work";
+                    backgroundColor = Color.parseColor("#FFFFFF");
+                }
+                // Không gạch ngang
+                shouldStrikeThrough = false;
             }
         }
 
         holder.tvTaskType.setText(typeLabel);
         holder.cardView.setCardBackgroundColor(backgroundColor);
-
-        // --- 2. TÊN TASK ---
         holder.tvTaskName.setText(task.getTitle() != null ? task.getTitle() : "");
         holder.tvTaskName.setTextColor(titleColor);
 
-        if (task.isDone()) {
+        // Áp dụng gạch ngang dựa trên biến cờ đã tính toán ở trên
+        if (shouldStrikeThrough) {
             holder.tvTaskName.setPaintFlags(holder.tvTaskName.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
         } else {
             holder.tvTaskName.setPaintFlags(holder.tvTaskName.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
         }
+
+        // (Đã xóa đoạn code setPaintFlags bị lặp thừa ở đây)
 
         // --- 3. MÀU PRIORITY (CHỈ HIỆN DOT) ---
         String priority = task.getPriority();
@@ -151,7 +176,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.subtaskContainer.removeAllViews();
 
         if(task.getSubTasks() != null && !task.getSubTasks().isEmpty()) {
-            // CÓ SUBTASK -> HIỆN
             holder.subtaskContainer.setVisibility(View.VISIBLE);
 
             int limit = Math.min(task.getSubTasks().size(), 4);
@@ -165,7 +189,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tv.setMaxLines(1);
                 tv.setEllipsize(android.text.TextUtils.TruncateAt.END);
 
-                // Set LayoutParams là WRAP_CONTENT để hiển thị đúng
                 LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -173,18 +196,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tv.setLayoutParams(params);
 
                 if (sub.isDone()) {
-                    // Thêm gạch ngang và làm mờ nếu subtask đã xong
                     tv.setPaintFlags(tv.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                     tv.setAlpha(0.6f);
                 } else {
-                    // Bỏ gạch ngang nếu chưa xong (quan trọng khi tái sử dụng view)
                     tv.setPaintFlags(tv.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
                     tv.setAlpha(1.0f);
                 }
                 holder.subtaskContainer.addView(tv);
             }
         } else {
-            // KHÔNG CÓ SUBTASK -> ẨN
             holder.subtaskContainer.setVisibility(View.GONE);
         }
 
@@ -210,8 +230,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     static class TaskViewHolder extends RecyclerView.ViewHolder {
         TextView tvTaskType, tvTaskName, tvCompleted;
         View viewPriorityDot;
-        // Đã xóa tvPriority
-
         LinearLayout subtaskContainer;
         CardView cardView;
         View btnDelete;
@@ -221,10 +239,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvTaskType = itemView.findViewById(R.id.tvTaskType);
             tvTaskName = itemView.findViewById(R.id.tvTaskName);
             tvCompleted = itemView.findViewById(R.id.tvCompleted);
-
             viewPriorityDot = itemView.findViewById(R.id.viewPriorityDot);
-            // Đã xóa ánh xạ tvPriority
-
             subtaskContainer = itemView.findViewById(R.id.subtaskContainer);
             cardView = itemView.findViewById(R.id.taskCard);
             btnDelete = itemView.findViewById(R.id.btnDelete);

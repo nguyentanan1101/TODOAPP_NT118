@@ -11,8 +11,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager; // Đổi sang Staggered
 
 import com.example.todoapp.R;
 import com.example.todoapp.adapter.TaskAdapter;
@@ -45,8 +45,11 @@ public class CompletedTasksActivity extends AppCompatActivity {
     private List<TaskModel> completedTaskList = new ArrayList<>();
 
     private OkHttpClient client = new OkHttpClient();
-    private static final String BASE_URL = "http://34.124.178.44:4000/api/tasks/create-by-me";
+    // Cập nhật IP server cho đồng bộ
+    private static final String BASE_URL = "http://34.124.178.44:4000/api/tasks/created-by-me";
     private static final String SUBTASK_URL = "http://34.124.178.44:4000/api/subtask/task/";
+    // API xóa task (nếu cần)
+    private static final String DELETE_TASK_URL = "http://34.124.178.44:4000/api/tasks/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,35 +63,72 @@ public class CompletedTasksActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
 
         adapter = new TaskAdapter(this, completedTaskList);
+        adapter.setCompletedScreen(true);
 
+        // 1. Sự kiện xem chi tiết
         adapter.setOnTaskClickListener(task -> {
             Intent intent = new Intent(CompletedTasksActivity.this, TaskDetailActivity.class);
             intent.putExtra("TASK", task);
             startActivity(intent);
         });
 
-        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        // 2. Sự kiện xóa task
+        adapter.setOnDeleteClickListener((task, position) -> {
+            deleteTaskFromServer(task.getId(), position);
+        });
+
+        // Dùng StaggeredGridLayoutManager để hiển thị đẹp hơn (giống Main)
+        recyclerView.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
         recyclerView.setAdapter(adapter);
 
         fetchCompletedTasks();
     }
 
-    private String formatDate(String isoDate) {
-        if (isoDate == null || isoDate.isEmpty()) return "";
-        try {
-            if (isoDate.contains("T")) {
-                SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
-                Date date = isoFormat.parse(isoDate);
-                SimpleDateFormat displayFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-                return displayFormat.format(date);
-            } else {
-                SimpleDateFormat simpleFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                Date date = simpleFormat.parse(isoDate);
-                SimpleDateFormat displayFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-                return displayFormat.format(date);
+    // Hàm xóa task
+    private void deleteTaskFromServer(int taskId, int position) {
+        SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
+        String accessToken = sp.getString("accessToken", "");
+
+        Request request = new Request.Builder()
+                .url(DELETE_TASK_URL + taskId)
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .delete()
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                runOnUiThread(() -> Toast.makeText(CompletedTasksActivity.this, "Xóa thất bại", Toast.LENGTH_SHORT).show());
             }
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(CompletedTasksActivity.this, "Đã xóa task", Toast.LENGTH_SHORT).show();
+                        adapter.removeItem(position);
+                        if (adapter.getItemCount() == 0) {
+                            tvEmpty.setVisibility(View.VISIBLE);
+                            recyclerView.setVisibility(View.GONE);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    private String formatDate(String isoDate) {
+        if (isoDate == null || isoDate.isEmpty() || isoDate.equals("null")) return "Unknown";
+        try {
+            SimpleDateFormat isoFormat;
+            if (isoDate.contains("T")) {
+                isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
+            } else {
+                isoFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            }
+            Date date = isoFormat.parse(isoDate);
+            SimpleDateFormat displayFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            return displayFormat.format(date);
         } catch (Exception e) {
-            e.printStackTrace();
             return isoDate;
         }
     }
@@ -97,9 +137,10 @@ public class CompletedTasksActivity extends AppCompatActivity {
         SharedPreferences sp = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE);
         String accessToken = sp.getString("accessToken", "");
 
-        // 1. LẤY USER ID HIỆN TẠI ĐỂ SO SÁNH
         String currentUserIdStr = sp.getString("user_id", "0");
-        int currentUserId = Integer.parseInt(currentUserIdStr);
+        int currentUserId = 0;
+        try { currentUserId = Integer.parseInt(currentUserIdStr); } catch (Exception e) {}
+        final int myId = currentUserId;
 
         Request request = new Request.Builder()
                 .url(BASE_URL)
@@ -110,16 +151,12 @@ public class CompletedTasksActivity extends AppCompatActivity {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(CompletedTasksActivity.this, "Connection Error", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(CompletedTasksActivity.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show());
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                if (!response.isSuccessful()) {
-                    Log.e("API_ERROR", "Code: " + response.code());
-                    return;
-                }
+                if (!response.isSuccessful()) return;
 
                 try {
                     String res = response.body().string();
@@ -131,36 +168,40 @@ public class CompletedTasksActivity extends AppCompatActivity {
 
                     for (int i = 0; i < arr.length(); i++) {
                         JSONObject t = arr.getJSONObject(i);
-                        int taskId = t.optInt("task_id", 0);
-                        String title = t.optString("task_name", "");
-                        String statusStr = t.optString("task_status", "").trim();
+
+                        // Xử lý Status (Check null)
+                        String statusStr = t.optString("task_status");
+                        if (statusStr == null || statusStr.isEmpty() || statusStr.equals("null")) statusStr = t.optString("status");
+                        if (statusStr == null || statusStr.isEmpty() || statusStr.equals("null")) statusStr = "ToDo";
 
                         boolean isDone = statusStr.equalsIgnoreCase("Completed") || statusStr.equalsIgnoreCase("Done");
 
                         if (isDone) {
-                            // --- 2. SỬA LOGIC PHÂN LOẠI TẠI ĐÂY ---
-                            int createdBy = t.optInt("created_by", 0);
-                            TaskModel.TaskType type;
+                            int taskId = t.optInt("task_id", 0);
 
-                            if (createdBy == currentUserId) {
-                                // Do mình tạo -> PERSONAL (Màu xanh lá)
-                                type = TaskModel.TaskType.PERSONAL;
-                            } else {
-                                // Do người khác tạo -> WORK (Màu cam/vàng)
-                                type = TaskModel.TaskType.WORK_GROUP; // hoặc WORK_PRIVATE
+                            // Xử lý Title
+                            String title = t.optString("task_name");
+                            if (title.isEmpty()) title = t.optString("title", "No Title");
+
+                            // Phân loại Task
+                            int createdBy = t.optInt("created_by", 0);
+                            int projectId = t.optInt("project_id", 0);
+                            TaskModel.TaskType type;
+                            if (projectId > 0) type = TaskModel.TaskType.WORK_GROUP;
+                            else {
+                                if (createdBy == myId) type = TaskModel.TaskType.PERSONAL;
+                                else type = TaskModel.TaskType.WORK_PRIVATE;
                             }
 
-                            // Lấy thêm priority từ JSON
                             String priority = t.optString("priority", "Low");
 
-                            // Truyền priority vào Constructor (tham số cuối cùng)
+                            // Tạo Model
                             TaskModel task = new TaskModel(taskId, title, type, new ArrayList<>(), priority);
                             task.setDone(true);
 
+                            // Lấy ngày hoàn thành
                             String rawDate = t.optString("updated_at", "");
-                            if (rawDate.isEmpty() || rawDate.equals("null")) {
-                                rawDate = t.optString("due_date", "");
-                            }
+                            if (rawDate.isEmpty() || rawDate.equals("null")) rawDate = t.optString("due_date", "");
                             task.setCompletedDate(formatDate(rawDate));
 
                             completedTaskList.add(task);
@@ -179,9 +220,7 @@ public class CompletedTasksActivity extends AppCompatActivity {
                         }
                     });
 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                } catch (Exception e) { e.printStackTrace(); }
             }
         });
     }
@@ -209,12 +248,19 @@ public class CompletedTasksActivity extends AppCompatActivity {
                     for (int i = 0; i < arr.length(); i++) {
                         JSONObject s = arr.getJSONObject(i);
                         int subId = s.optInt("subtask_id", 0);
-                        String subTitle = s.optString("subtask_name", "");
 
-                        String subStatus = s.optString("subtask_status", "").trim();
+                        String subTitle = s.optString("subtask_name", "");
+                        if (subTitle.isEmpty()) subTitle = s.optString("title", "");
+
+                        String subStatus = s.optString("subtask_status", "");
+                        if (subStatus.equals("null") || subStatus.isEmpty()) subStatus = "ToDo";
                         boolean done = subStatus.equalsIgnoreCase("Completed") || subStatus.equalsIgnoreCase("Done");
 
-                        subTasks.add(new SubTaskModel(subId, subTitle, "", "", done));
+                        // Lấy ngày subtask
+                        String dueDate = s.optString("due_date", "");
+                        if(dueDate.contains("T")) dueDate = dueDate.split("T")[0];
+
+                        subTasks.add(new SubTaskModel(subId, subTitle, "", dueDate, done));
                     }
                     task.setSubTasks(subTasks);
                     runOnUiThread(() -> adapter.notifyDataSetChanged());
